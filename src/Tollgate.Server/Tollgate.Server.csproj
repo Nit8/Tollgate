@@ -20,8 +20,4 @@
     <ProjectReference Include="..\Tollgate.Abstractions\Tollgate.Abstractions.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
 </Project>
