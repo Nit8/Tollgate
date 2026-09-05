@@ -1,1 +1,3 @@
-<Solution />
+<Solution>
+  <Project Path="src/Tollgate.Abstractions/Tollgate.Abstractions.csproj" />
+</Solution>
