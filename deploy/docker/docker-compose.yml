@@ -1,4 +1,5 @@
-version: "3.9"
+# docker-compose file schema is implicit in Compose v2 — the legacy
+# top-level `version` key is deprecated and produces a warning.
 
 # ─────────────────────────────────────────────────────────────
 #  Tollgate Server — one-command deploy
@@ -6,7 +7,7 @@ version: "3.9"
 #  1.  Edit .env to set your secrets
 #  2.  Run:
 #          docker compose up -d --build
-#  3.  Visit  http://localhost:7431/swagger
+#  3.  Visit  http://localhost:7431/swagger (Development only)
 # ─────────────────────────────────────────────────────────────
 
 services:
@@ -23,9 +24,14 @@ services:
       - Jwt__Secret=${TOLLGATE_JWT_SECRET}
       - Admin__Key=${TOLLGATE_ADMIN_KEY}
       - Jwt__TokenLifetimeDays=7
+      - Data__Path=/data/licenses.db
+      # REQUIRED in Production — set your app's origin(s), comma-separated
+      # or repeated env keys (Cors__AllowedOrigins__0, __1, ...).
+      - Cors__AllowedOrigins__0=${TOLLGATE_CORS_ORIGINS}
     volumes:
       - tollgate-data:/data
     healthcheck:
+      # curl is installed in the runtime image (see Dockerfile).
       test: ["CMD", "curl", "-fsS", "http://localhost:7431/api/license/health"]
       interval: 30s
       timeout: 5s

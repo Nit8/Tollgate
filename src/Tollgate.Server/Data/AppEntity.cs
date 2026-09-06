@@ -1,4 +1,4 @@
-﻿namespace Tollgate.Server.Data
+namespace Tollgate.Server.Data
 {
     /// <summary>A registered application (multi-tenant support).</summary>
     public class AppEntity

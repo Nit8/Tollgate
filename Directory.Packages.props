@@ -1,0 +1,62 @@
+<Project>
+
+  <!--
+    ═══════════════════════════════════════════════════════════════
+      Central Package Management — every NuGet version in the repo
+      is declared exactly once, here.
+
+      The Microsoft.Extensions.* and Microsoft.Win32.Registry
+      versions are TFM-conditional: the net8.0 target of the client
+      packages uses the 8.x line so it restores cleanly on .NET 8,
+      while net10.0* uses the current 10.x line.
+    ═══════════════════════════════════════════════════════════════
+  -->
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+
+    <!-- Microsoft.Extensions.* — 8.x for the net8.0 target, 10.x otherwise. -->
+    <MEPackagesVersion Condition="'$(TargetFramework)' == 'net8.0'">8.0.1</MEPackagesVersion>
+    <MEPackagesVersion Condition="'$(TargetFramework)' != 'net8.0'">10.0.0</MEPackagesVersion>
+    <MEOptionsVersion Condition="'$(TargetFramework)' == 'net8.0'">8.0.2</MEOptionsVersion>
+    <MEOptionsVersion Condition="'$(TargetFramework)' != 'net8.0'">10.0.11</MEOptionsVersion>
+    <MELoggingVersion Condition="'$(TargetFramework)' == 'net8.0'">8.0.1</MELoggingVersion>
+    <MELoggingVersion Condition="'$(TargetFramework)' != 'net8.0'">10.0.0</MELoggingVersion>
+
+    <!-- Registry — 8.x / 10.x by TFM (Windows-only runtime, safe to reference). -->
+    <RegistryVersion Condition="'$(TargetFramework)' == 'net8.0'">8.0.0</RegistryVersion>
+    <RegistryVersion Condition="'$(TargetFramework)' != 'net8.0'">10.0.0</RegistryVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Tollgate.Licensing -->
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="$(MEPackagesVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="$(MEOptionsVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="$(MELoggingVersion)" />
+    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
+    <PackageVersion Include="Microsoft.Win32.Registry" Version="$(RegistryVersion)" />
+
+    <!-- Tollgate.Licensing (net10.0-windows only) -->
+    <PackageVersion Include="System.Management" Version="10.0.0" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
+
+    <!-- Tollgate.Server -->
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.0.0" />
+
+    <!-- Tollgate.KeyGen -->
+    <PackageVersion Include="Spectre.Console" Version="0.57.2" />
+
+    <!-- SourceLink (build-time only, referenced from Directory.Build.targets). -->
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+
+    <!-- Tests -->
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="xunit" Version="2.9.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+</Project>

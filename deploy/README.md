@@ -9,13 +9,17 @@ This guide covers the canonical deployment patterns. Pick the one that matches y
 ```bash
 cd deploy/docker
 cp .env.example .env
-nano .env   # set TOLLGATE_JWT_SECRET and TOLLGATE_ADMIN_KEY
+nano .env   # set TOLLGATE_JWT_SECRET, TOLLGATE_ADMIN_KEY and TOLLGATE_CORS_ORIGINS
 docker compose up -d --build
 ```
 
 - Server: `http://localhost:7431`
-- Swagger: `http://localhost:7431/swagger`
-- SQLite DB persisted in the `tollgate-data` Docker volume.
+- Swagger: Development only (the server does not enable it in Production)
+- SQLite DB persisted in the `tollgate-data` Docker volume (`/data/licenses.db`)
+- The healthcheck (curl is installed in the image) turns the service `healthy` once the API responds
+
+> `TOLLGATE_CORS_ORIGINS` is **required** in Production — the server refuses
+> to start with an empty CORS allow-list.
 
 ---
 
@@ -42,11 +46,16 @@ sudo cp -r publish/server/* /opt/tollgate/
 sudo chown -R www-data:www-data /opt/tollgate
 ```
 
+The systemd unit sets `Data__Path=/opt/tollgate/data/licenses.db` so the
+database lives in the writable `data` directory (surviving upgrades), not
+inside the read-only-strict application tree.
+
 ### 2.3 Install the systemd unit
 
 ```bash
 sudo cp deploy/systemd/tollgate.service /etc/systemd/system/
-# Edit the file: replace the Jwt__Secret and Admin__Key env vars!
+# Edit the file: replace the Jwt__Secret and Admin__Key env vars,
+# and set Cors__AllowedOrigins__0 to your app's origin!
 sudo nano /etc/systemd/system/tollgate.service
 
 sudo systemctl daemon-reload
@@ -96,8 +105,10 @@ For zero-downtime rotation, use RSA signing instead (see main README).
 
 ## Backups
 
-- **SQLite**: back up `licenses.db` on a schedule:
+- **SQLite**: back up the database on a schedule. The file lives at the
+  `Data:Path` location (`/data/licenses.db` in Docker, `/opt/tollgate/data/licenses.db`
+  under systemd, next to the binary otherwise):
   ```bash
-  sqlite3 licenses.db ".backup '/backup/licenses-$(date +%F).db'"
+  sqlite3 /opt/tollgate/data/licenses.db ".backup '/backup/licenses-$(date +%F).db'"
   ```
 - **Postgres/SQL Server**: use your DB's standard backup tooling.

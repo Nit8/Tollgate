@@ -7,16 +7,18 @@ namespace Tollgate.Licensing
     //  MACHINE FINGERPRINT
     //
     //  Cross-platform: works on Windows, Linux and macOS.
-    //  Windows  → uses WMI (CPU + Disk + Motherboard serials)
-    //  Linux    → uses /etc/machine-id (or /var/lib/dbus/machine-id)
-    //  macOS    → uses `ioreg` for IOPlatformUUID
-    //  Falls back to Environment.MachineName + UserName hash.
+    //  Windows (net10.0-windows TFM) → WMI (CPU + Disk + Motherboard serials)
+    //  Windows (plain TFM)           → registry MachineGuid (stable per OS
+    //                                  install, no WMI dependency)
+    //  Linux    → /etc/machine-id (or /var/lib/dbus/machine-id)
+    //  macOS    → `ioreg` for IOPlatformUUID
+    //  Falls back to a MachineName + OSVersion hash.
     // ─────────────────────────────────────────────────────────────
 
     /// <summary>
     /// Builds a stable, anonymous machine fingerprint.
-    /// Same hardware → same fingerprint, even after reboots or
-    /// reinstalls. No personally identifying information is sent.
+    /// Same hardware → same fingerprint, even after reboots.
+    /// No personally identifying information (user name is never included).
     /// </summary>
     public static class MachineFingerprint
     {
@@ -49,35 +51,65 @@ namespace Tollgate.Licensing
         private static string? TryGetWindowsFingerprint()
         {
             if (!OperatingSystem.IsWindows()) return null;
+
 #if NET10_0_WINDOWS
-        try
-        {
-            string cpu   = WmiValue("Win32_Processor",  "ProcessorId");
-            string disk  = WmiValue("Win32_DiskDrive",  "SerialNumber");
-            string board = WmiValue("Win32_BaseBoard",  "SerialNumber");
-            if (string.IsNullOrEmpty(cpu) && string.IsNullOrEmpty(disk)) return null;
-            return $"win|{cpu}|{disk}|{board}";
-        }
-        catch { return null; }
-#else
-            return null;
+            // WMI path — hardware serials (CPU, disk, motherboard). Compiled
+            // only into the net10.0-windows asset of the package.
+            try
+            {
+                string cpu   = WmiValue("Win32_Processor", "ProcessorId");
+                string disk  = WmiValue("Win32_DiskDrive", "SerialNumber");
+                string board = WmiValue("Win32_BaseBoard", "SerialNumber");
+                if (string.IsNullOrEmpty(cpu) && string.IsNullOrEmpty(disk)) return null;
+                return $"win|{cpu}|{disk}|{board}";
+            }
+            catch { /* fall through to the registry path */ }
 #endif
+            // Registry path — MachineGuid is stable for the lifetime of the
+            // OS install and available from every TFM without WMI. Used when
+            // the app targets plain net10.0/net8.0 (the common case for
+            // consumers referencing the NuGet package on Windows).
+            try
+            {
+                var guid = ReadMachineGuid();
+                if (!string.IsNullOrWhiteSpace(guid)) return $"win|{guid}";
+            }
+            catch { /* fall through to platform probes */ }
+            return null;
         }
 
 #if NET10_0_WINDOWS
-    private static string WmiValue(string cls, string prop)
-    {
-        try
+        private static string WmiValue(string cls, string prop)
         {
-            using var searcher = new System.Management.ManagementObjectSearcher(
-                $"SELECT {prop} FROM {cls}");
-            foreach (var obj in searcher.Get())
-                return obj[prop]?.ToString()?.Trim() ?? "";
+            try
+            {
+                using var searcher = new System.Management.ManagementObjectSearcher(
+                    $"SELECT {prop} FROM {cls}");
+                foreach (var obj in searcher.Get())
+                    return obj[prop]?.ToString()?.Trim() ?? "";
+            }
+            catch { }
+            return "";
         }
-        catch { }
-        return "";
-    }
 #endif
+
+        /// <summary>
+        /// Read HKLM\SOFTWARE\Microsoft\Cryptography\MachineGuid, checking
+        /// both 64-bit and 32-bit views.
+        /// </summary>
+        private static string? ReadMachineGuid()
+        {
+            const string subKey = @"SOFTWARE\Microsoft\Cryptography";
+
+            using var view64 = Microsoft.Win32.RegistryKey.OpenBaseKey(
+                Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry64);
+            var value = view64.OpenSubKey(subKey)?.GetValue("MachineGuid") as string;
+            if (!string.IsNullOrWhiteSpace(value)) return value;
+
+            using var view32 = Microsoft.Win32.RegistryKey.OpenBaseKey(
+                Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry32);
+            return view32.OpenSubKey(subKey)?.GetValue("MachineGuid") as string;
+        }
 
         // ── Linux ─────────────────────────────────────────────────
         private static string? TryGetLinuxFingerprint()
@@ -104,14 +136,20 @@ namespace Tollgate.Licensing
                     FileName = "/usr/sbin/ioreg",
                     Arguments = "-rd1 -c IOPlatformExpertDevice",
                     RedirectStandardOutput = true,
+                    RedirectStandardError = true,
                     UseShellExecute = false
                 };
                 using var p = System.Diagnostics.Process.Start(psi);
                 if (p is null) return null;
-                var output = p.StandardOutput.ReadToEnd();
-                p.WaitForExit(2000);
+
+                // Read asynchronously so a large output stream cannot
+                // deadlock the pipe, and enforce the timeout on the wait.
+                var outputTask = p.StandardOutput.ReadToEndAsync();
+                if (!p.WaitForExit(2000)) return null;
+                var output = outputTask.IsCompleted ? outputTask.Result : "";
+
                 var match = System.Text.RegularExpressions.Regex.Match(
-                    output, @"""IOPlatformUUID""\s*=\s*""([^""]+)""");
+                    output, "\"IOPlatformUUID\"\\s*=\\s*\"([^\"]+)\"");
                 if (match.Success)
                     return $"macos|{match.Groups[1].Value}";
             }
@@ -120,12 +158,13 @@ namespace Tollgate.Licensing
         }
 
         // ── Fallback ──────────────────────────────────────────────
+        // Deliberately excludes Environment.UserName (PII, and it changes
+        // when the user creates a new account on the same machine).
         private static string FallbackFingerprint()
         {
-            var raw = $"{Environment.MachineName}|{Environment.UserName}|{Environment.OSVersion}";
+            var raw = $"fallback|{Environment.MachineName}|{Environment.OSVersion}";
             var hash = SHA256.HashData(Encoding.UTF8.GetBytes(raw));
             return "FB" + Convert.ToHexString(hash)[..14];
         }
     }
-
 }

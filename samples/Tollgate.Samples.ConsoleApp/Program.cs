@@ -9,19 +9,19 @@ namespace Tollgate.Samples.ConsoleApp
     {
         static async Task Main(string[] args)
         {
-            // ?????????????????????????????????????????????????????????????
-            //  Tollgate Sample � Console TODO app
+            // ─────────────────────────────────────────────────────────────
+            //  Tollgate Sample — Console TODO app
             //
             //  Demonstrates the simplest possible usage:
             //
             //    1. Configure the client with your Tollgate server URL
             //    2. Try to load saved license (offline-first)
             //    3. If no license, prompt for activation
-            //    4. Run the app � every gated method throws
+            //    4. Run the app — every gated method throws
             //       LicenseRequiredException if the user lacks access
-            // ?????????????????????????????????????????????????????????????
+            // ─────────────────────────────────────────────────────────────
 
-            // ?? STEP 1 � configure ????????????????????????????????????????
+            // ── STEP 1 · configure ───────────────────────────────────────
             LicenseGate.Configure(o =>
             {
                 o.ServerUrl = "http://localhost:7431";
@@ -29,15 +29,18 @@ namespace Tollgate.Samples.ConsoleApp
                 o.AppVersion = "1.0.0";
                 o.CacheFile = "license.dat";
                 o.OfflineGraceDays = 7;
+                // For cryptographically verified offline caching, set one of:
+                //   o.PublicKey   = "-----BEGIN PUBLIC KEY-----...";  (recommended)
+                //   o.SharedSecret = "<same as Jwt:Secret on the server>";
             });
 
             Console.WriteLine("== Tollgate Sample: TODO app ==");
             Console.WriteLine($"Machine ID: {MachineFingerprint.Get()}\n");
 
-            // ?? STEP 2 � load saved license ????????????????????????????????
+            // ── STEP 2 · load saved license ─────────────────────────────
             var loaded = await LicenseGate.TryLoadSavedLicenseAsync();
 
-            // ?? STEP 3 � activate if needed ?????????????????????????????????
+            // ── STEP 3 · activate if needed ─────────────────────────────
             if (!loaded)
             {
                 Console.WriteLine("No license found.");
@@ -47,8 +50,8 @@ namespace Tollgate.Samples.ConsoleApp
                 {
                     var result = await LicenseGate.ActivateKeyAsync(key);
                     Console.WriteLine(result.IsValid
-                        ? $"? {result.Message}  Tier={result.Tier}, Features=[{string.Join(", ", result.Features)}]"
-                        : $"? {result.Message}");
+                        ? $"[OK] {result.Message}  Tier={result.Tier}, Features=[{string.Join(", ", result.Features)}]"
+                        : $"[X]  {result.Message}");
                     Console.WriteLine();
                 }
                 else
@@ -59,7 +62,7 @@ namespace Tollgate.Samples.ConsoleApp
 
             PrintStatus();
 
-            // ?? STEP 4 � REPL ??????????????????????????????????????????????
+            // ── STEP 4 · REPL ────────────────────────────────────────────
             var svc = new TodoService();
             while (true)
             {
@@ -97,7 +100,7 @@ namespace Tollgate.Samples.ConsoleApp
                             // of the params array, not the params array itself.
                             RunGated(nameof(TodoService.BulkImport),
                                 (object)new[] { "Task A", "Task B", "Task C", "Task D", "Task E" });
-                            Console.WriteLine("? Imported 5 tasks.");
+                            Console.WriteLine("Imported 5 tasks.");
                             break;
 
                         case "pdf":
@@ -118,14 +121,16 @@ namespace Tollgate.Samples.ConsoleApp
                             if (!string.IsNullOrEmpty(k))
                             {
                                 var r = await LicenseGate.ActivateKeyAsync(k);
-                                Console.WriteLine(r.IsValid ? $"? {r.Message}" : $"? {r.Message}");
+                                Console.WriteLine(r.IsValid ? $"[OK] {r.Message}" : $"[X]  {r.Message}");
                                 PrintStatus();
                             }
                             break;
 
                         case "deactivate":
-                            LicenseGate.ClearLicense();
-                            Console.WriteLine("? License cleared.");
+                            // Releases the machine binding on the server and
+                            // clears the local cache (license transfer).
+                            var d = await LicenseGate.DeactivateAsync();
+                            Console.WriteLine(d.IsValid ? "[OK] License deactivated." : $"[X]  {d.Message}");
                             PrintStatus();
                             break;
 
@@ -139,7 +144,7 @@ namespace Tollgate.Samples.ConsoleApp
                             Console.WriteLine("  ai              suggest   [Feature: ai-assist]");
                             Console.WriteLine("  status          show license state");
                             Console.WriteLine("  activate        enter license key");
-                            Console.WriteLine("  deactivate      clear license");
+                            Console.WriteLine("  deactivate      release machine binding + clear cache");
                             Console.WriteLine("  exit");
                             break;
 
@@ -153,11 +158,11 @@ namespace Tollgate.Samples.ConsoleApp
                 }
                 catch (LicenseRequiredException ex)
                 {
-                    Console.WriteLine($"?? {ex.Message}");
+                    Console.WriteLine($"[locked] {ex.Message}");
                 }
             }
 
-            // ?? Helper: invoke a TodoService method by name, enforcing
+            // ── Helper: invoke a TodoService method by name, enforcing
             //    [RequireFeature] / [RequireTier] attributes via reflection.
             //    This is exactly what Tollgate.AspNetCore's RequireFeatureFilter
             //    does automatically for controllers / actions.
@@ -171,12 +176,12 @@ namespace Tollgate.Samples.ConsoleApp
                 // Throws LicenseRequiredException if attributes aren't satisfied.
                 LicenseGate.EnsureAccessFor(method);
 
-                // Invoke � handle the result specially for display.
+                // Invoke — handle the result specially for display.
                 var result = method.Invoke(svc, args);
                 if (result is byte[] bytes)
-                    Console.WriteLine($"? Exported {bytes.Length} bytes (placeholder).");
+                    Console.WriteLine($"Exported {bytes.Length} bytes (placeholder).");
                 else if (result is string s)
-                    Console.WriteLine($"? Suggestion: {s}");
+                    Console.WriteLine($"Suggestion: {s}");
             }
 
             void PrintStatus()
@@ -186,7 +191,7 @@ namespace Tollgate.Samples.ConsoleApp
                     Console.WriteLine($"\n  License:  [FREE MODE]  Tier=None\n");
                 else
                     Console.WriteLine(
-                        $"\n  License:  ?  Tier={s.Tier}  " +
+                        $"\n  License:  Tier={s.Tier}  " +
                         $"Features=[{string.Join(", ", s.Features)}]  " +
                         $"Key={s.LicenseKey}  " +
                         $"Expiry={(s.ExpiresAt?.ToString("yyyy-MM-dd") ?? "Lifetime")}\n");

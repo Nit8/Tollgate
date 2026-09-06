@@ -1,33 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
+    <!--
+      netstandard2.0 reaches every .NET runtime of the last decade
+      (incl. .NET Framework 4.6.2+ and Unity); net10.0 gets the
+      modern API surface. The IsExternalInit shim in Compat/ handles
+      records/init on netstandard2.0.
+    -->
+    <TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
     <RootNamespace>Tollgate.Abstractions</RootNamespace>
 
-    <!-- NuGet packaging metadata -->
+    <!-- NuGet packaging metadata (shared values live in Directory.Build.props). -->
     <PackageId>Tollgate.Abstractions</PackageId>
-    <Version>1.0.0</Version>
-    <Authors>Tollgate</Authors>
-    <Company>Tollgate</Company>
-    <Product>Tollgate</Product>
     <Description>
       Drop-in SaaS licensing for any .NET app (WPF, WinForms, ASP.NET, Console).
       Shared abstractions: attributes, enums, DTOs and exceptions used by both
       the Tollgate client library and the Tollgate license server.
     </Description>
-    <Summary>SaaS licensing abstractions — [RequireFeature], [RequireTier], DTOs.</Summary>
     <PackageTags>licensing;saas;subscription;feature;toggle;tollgate;dotnet;nuget</PackageTags>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/your-org/tollgate</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/your-org/tollgate</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

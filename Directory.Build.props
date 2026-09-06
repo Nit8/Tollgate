@@ -1,0 +1,58 @@
+<Project>
+
+  <!--
+    ═══════════════════════════════════════════════════════════════
+      Shared NuGet + build metadata for every project in the repo.
+
+      Package-specific values (PackageId, Description, PackageTags,
+      PackageReadmeFile, TargetFrameworks, dependencies) stay in each
+      .csproj — everything else lives here so the three packages can
+      never drift apart again.
+
+      TODO (before publishing to nuget.org):
+        1. Replace "your-org" in RepositoryUrl / PackageProjectUrl /
+           PackageReleaseNotes with your real GitHub user/org name.
+        2. Adjust Authors / Copyright to the identity you want shown
+           on the nuget.org package pages.
+        3. Reserve the "Tollgate" prefix on nuget.org once the account
+           is verified.
+    ═══════════════════════════════════════════════════════════════
+  -->
+
+  <PropertyGroup>
+    <!-- Version is shared by all three packages (lockstep releases). -->
+    <Version>1.0.0</Version>
+    <Authors>Nitesh Jaiswal</Authors>
+    <Company>Tollgate</Company>
+    <Product>Tollgate</Product>
+    <Copyright>Copyright (c) 2026 Nitesh Jaiswal</Copyright>
+    <NeutralLanguage>en-US</NeutralLanguage>
+
+    <!-- License: expression form, matched by LICENSE.txt at the repo root. -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+    <!-- TODO: replace your-org with the real GitHub owner before publishing. -->
+    <PackageProjectUrl>https://github.com/your-org/tollgate</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/your-org/tollgate</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>https://github.com/your-org/tollgate/releases</PackageReleaseNotes>
+
+    <!-- Package icon (rooted icon.png, included by Directory.Build.targets). -->
+    <PackageIcon>icon.png</PackageIcon>
+
+    <!-- Reproducible builds + source debugging. -->
+    <Deterministic>true</Deterministic>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+
+    <!-- Symbol packages (dotnet pack also emits .snupkg). -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- Common compile settings. -->
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

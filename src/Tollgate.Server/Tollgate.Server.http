@@ -11,24 +11,85 @@ Content-Type: application/json
 {
   "licenseKey": "PRO-XXXX-XXXX-XXXX-XXXX",
   "machineId": "test-machine-id",
+  "appId": "my-app",
+  "appVersion": "1.0.0"
+}
+
+### Deactivate a license (release machine binding — from the bound machine)
+POST {{Tollgate.Server_HostAddress}}/api/license/deactivate
+Content-Type: application/json
+
+{
+  "licenseKey": "PRO-XXXX-XXXX-XXXX-XXXX",
+  "machineId": "test-machine-id",
   "appId": "my-app"
 }
 
-### Generate license keys (requires admin key)
+### Verify a cached token
+POST {{Tollgate.Server_HostAddress}}/api/license/verify-token
+Content-Type: application/json
+
+{
+  "token": "<cached-jwt>",
+  "machineId": "test-machine-id",
+  "appId": "my-app"
+}
+
+### Generate license keys (admin key in header — never in the body)
 POST {{Tollgate.Server_HostAddress}}/api/admin/generate
 Content-Type: application/json
+X-Admin-Key: MY-SUPER-SECRET-ADMIN-KEY-CHANGE-ME
 
 {
   "appId": "my-app",
   "tier": "Pro",
   "count": 1,
-  "features": ["export-pdf", "ai-assist"],
-  "adminKey": "MY-SUPER-SECRET-ADMIN-KEY-CHANGE-ME"
+  "features": ["export-pdf", "ai-assist"]
 }
 
-### List all keys (admin key in header)
-GET {{Tollgate.Server_HostAddress}}/api/admin/keys
+### Set features on an existing key
+POST {{Tollgate.Server_HostAddress}}/api/admin/set-features
+Content-Type: application/json
 X-Admin-Key: MY-SUPER-SECRET-ADMIN-KEY-CHANGE-ME
+
+{
+  "appId": "my-app",
+  "licenseKey": "PRO-XXXX-XXXX-XXXX-XXXX",
+  "features": ["export-pdf", "ai-assist", "bulk-import"]
+}
+
+### List keys (admin key in header; paginated + filters)
+GET {{Tollgate.Server_HostAddress}}/api/admin/keys?appId=my-app&active=true&page=1&pageSize=50
+X-Admin-Key: MY-SUPER-SECRET-ADMIN-KEY-CHANGE-ME
+
+### Revoke a key
+POST {{Tollgate.Server_HostAddress}}/api/admin/revoke
+Content-Type: application/json
+X-Admin-Key: MY-SUPER-SECRET-ADMIN-KEY-CHANGE-ME
+
+{
+  "licenseKey": "PRO-XXXX-XXXX-XXXX-XXXX",
+  "appId": "my-app"
+}
+
+### Reset machine binding
+POST {{Tollgate.Server_HostAddress}}/api/admin/reset-machine
+Content-Type: application/json
+X-Admin-Key: MY-SUPER-SECRET-ADMIN-KEY-CHANGE-ME
+
+{
+  "licenseKey": "PRO-XXXX-XXXX-XXXX-XXXX"
+}
+
+### Register an app
+POST {{Tollgate.Server_HostAddress}}/api/admin/apps/register
+Content-Type: application/json
+X-Admin-Key: MY-SUPER-SECRET-ADMIN-KEY-CHANGE-ME
+
+{
+  "appId": "my-new-app",
+  "displayName": "My New App"
+}
 
 ### List registered apps
 GET {{Tollgate.Server_HostAddress}}/api/admin/apps

@@ -11,8 +11,8 @@ namespace Tollgate.AspNetCore
     // ─────────────────────────────────────────────────────────────
     //  ASP.NET CORE ACTION FILTER
     //
-    //  Automatically enforces [RequireFeature] / [RequireTier]
-    //  on controllers and actions.
+    //  Automatically enforces [RequireFeature] / [RequireTier] /
+    //  [RequireTrial] on controllers and actions.
     //
     //  Register globally via:
     //      services.AddControllers(o => o.Filters.Add<RequireFeatureFilter>());
@@ -21,8 +21,9 @@ namespace Tollgate.AspNetCore
 
     /// <summary>
     /// ASP.NET Core filter that gates an action by checking the
-    /// <see cref="RequireFeatureAttribute"/> and <see cref="RequireTierAttribute"/>
-    /// declared on the controller or action.
+    /// <see cref="RequireFeatureAttribute"/>, <see cref="RequireTierAttribute"/>
+    /// and <see cref="RequireTrialAttribute"/> declared on the controller or
+    /// action.
     /// </summary>
     public class RequireFeatureFilter : IAsyncAuthorizationFilter
     {
@@ -35,6 +36,7 @@ namespace Tollgate.AspNetCore
         /// </summary>
         public RequireFeatureFilter(ILicenseClient? client = null) => _client = client;
 
+        /// <inheritdoc />
         public Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
             // ActionDescriptor does not expose EndpointMetadata. Read the attributes
@@ -72,6 +74,18 @@ namespace Tollgate.AspNetCore
                 {
                     context.Result = Deny(attr.DeniedMessage ??
                         $"This action requires the '{attr.Feature}' feature.", attr.Feature);
+                    return Task.CompletedTask;
+                }
+            }
+
+            // Then trial-only members: the license must be a valid trial
+            // (valid key with tier None, e.g. TRIAL-XXXX-...).
+            foreach (var attr in attrs.OfType<RequireTrialAttribute>())
+            {
+                if (license is null || !license.IsValid || tier != LicenseTier.None)
+                {
+                    context.Result = Deny(attr.DeniedMessage ??
+                        "This action is only available during the trial period.", "trial");
                     return Task.CompletedTask;
                 }
             }

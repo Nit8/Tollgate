@@ -30,6 +30,10 @@ Environment=ASPNETCORE_URLS=http://0.0.0.0:7431
 Environment=Jwt__Secret=REPLACE_WITH_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS
 Environment=Admin__Key=REPLACE_WITH_ADMIN_PASSWORD
 Environment=Jwt__TokenLifetimeDays=7
+# SQLite lives in the writable data dir (ReadWritePaths below).
+Environment=Data__Path=/opt/tollgate/data/licenses.db
+# REQUIRED in Production — comma-separated origin allow-list.
+# Environment=Cors__AllowedOrigins__0=https://app.yourdomain.com
 
 # Hardening
 NoNewPrivileges=true

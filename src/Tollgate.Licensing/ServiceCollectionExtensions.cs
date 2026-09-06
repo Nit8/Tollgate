@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Tollgate.Licensing
 {
@@ -11,7 +13,9 @@ namespace Tollgate.Licensing
         /// <summary>
         /// Register Tollgate with options bound from a configuration section.
         /// Usage:
-        ///     builder.Services.AddTollgate(builder.Configuration.GetSection("Tollgate"));
+        /// <code>
+        /// builder.Services.AddTollgate(builder.Configuration.GetSection("Tollgate"));
+        /// </code>
         /// </summary>
         public static IServiceCollection AddTollgate(
             this IServiceCollection services,
@@ -24,10 +28,14 @@ namespace Tollgate.Licensing
         /// <summary>
         /// Register Tollgate with a delegate-based options builder.
         /// Usage:
-        ///     builder.Services.AddTollgate(o => {
-        ///         o.ServerUrl = "https://license.myapp.com";
-        ///         o.AppId = "my-app";
-        ///     });
+        /// <code>
+        /// builder.Services.AddTollgate(o =>
+        /// {
+        ///     o.ServerUrl = "https://license.myapp.com";
+        ///     o.AppId     = "my-app";
+        ///     o.PublicKey = "-----BEGIN PUBLIC KEY-----...";
+        /// });
+        /// </code>
         /// </summary>
         public static IServiceCollection AddTollgate(
             this IServiceCollection services,
@@ -39,12 +47,21 @@ namespace Tollgate.Licensing
 
         private static IServiceCollection AddTollgateCore(IServiceCollection services)
         {
-            // Register LicenseClient via IHttpClientFactory — proper HttpClient lifecycle management
-            services.AddHttpClient<LicenseClient>();
+            // Enables IHttpClientFactory and registers the named client
+            // configuration point ("Tollgate"). Handlers rotate correctly.
+            services.AddHttpClient(LicenseClient.HttpClientName);
 
-            // Expose ILicenseClient as a singleton that wraps the LicenseClient.
-            // Also wires up the static LicenseGate so non-DI code (attributes,
-            // filters, LicenseGate.Current) can read the same instance.
+            // LicenseClient is a safe singleton: it holds no HttpClient of its
+            // own — it rents a fresh one from the factory per operation, so
+            // there is no captive dependency and DNS changes keep working.
+            services.AddSingleton<LicenseClient>(sp => new LicenseClient(
+                sp.GetRequiredService<IHttpClientFactory>(),
+                sp.GetRequiredService<IOptions<TollgateOptions>>(),
+                sp.GetService<ILogger<LicenseClient>>()));
+
+            // Expose ILicenseClient as the same singleton instance and wire
+            // the static LicenseGate so non-DI code (attributes, filters,
+            // LicenseGate.Current) sees the same license state.
             services.AddSingleton<Interfaces.ILicenseClient>(sp =>
             {
                 var client = sp.GetRequiredService<LicenseClient>();

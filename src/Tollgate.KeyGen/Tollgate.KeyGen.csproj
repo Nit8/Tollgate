@@ -1,19 +1,40 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+
+    <!--
+      Packable as a .NET global/ local tool:
+          dotnet pack src/Tollgate.KeyGen   → Tollgate.KeyGen.<version>.nupkg
+          dotnet tool install -g Tollgate.KeyGen
+          tollgate-keygen ...
+    -->
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>tollgate-keygen</ToolCommandName>
+    <PackageId>Tollgate.KeyGen</PackageId>
+    <Description>
+      Admin CLI for the Tollgate licensing server: generate, revoke and manage
+      license keys and features. Install as a .NET tool with
+      "dotnet tool install -g Tollgate.KeyGen".
+    </Description>
+    <PackageTags>tollgate;licensing;cli;keygen;admin</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Spectre.Console" Version="0.57.2" />
+    <PackageReference Include="Spectre.Console" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Tollgate.Abstractions\Tollgate.Abstractions.csproj" />
     <ProjectReference Include="..\Tollgate.Licensing\Tollgate.Licensing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

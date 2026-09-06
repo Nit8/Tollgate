@@ -1,16 +1,20 @@
 {
-  "_comment": "Tollgate configuration file. Auto-created by the Tollgate.Licensing NuGet package on first build. Fill in your appId and adminKey (adminKey is only needed for the KeyGen CLI — leave blank for client apps).",
+  "_comment": "Tollgate configuration file. Auto-created by the Tollgate.Licensing NuGet package on first build. Fill in your appId. Set publicKey (recommended) or sharedSecret to enable cryptographically verified offline caching. adminKey is only needed for the KeyGen CLI — leave blank for client apps. Remove this file from source control if it contains secrets.",
 
   "serverUrl": "http://localhost:7431",
   "appId": "my-app",
   "appVersion": "1.0.0",
 
-  "adminKey": "REPLACE_WITH_YOUR_ADMIN_KEY",
+  "adminKey": "",
 
   "publicKey": "",
   "sharedSecret": "",
+  "issuer": "TollgateServer",
+  "audience": "TollgateClient",
 
+  "cacheDirectory": "",
   "cacheFile": "license.dat",
+  "httpTimeoutSeconds": 10,
   "offlineGraceDays": 7,
   "allowFreeMode": true
 }

@@ -92,9 +92,18 @@ namespace Tollgate.Abstractions
     }
 
     /// <summary>
-    /// Optional: marks a member as available only during a trial.
-    /// The server tracks trial state separately from paid tiers.
+    /// Marks a member as available only during a trial — the license must be
+    /// valid AND its tier must be <see cref="Enums.LicenseTier.None"/> (trial
+    /// keys are issued as None-tier keys, e.g. TRIAL-XXXX-...).
+    /// Enforced by <c>LicenseGate.EnsureAccessFor(...)</c>, the ASP.NET Core
+    /// <c>RequireFeatureFilter</c>, and <c>LicenseGate.EnsureTrial()</c>.
     /// </summary>
+    /// <example>
+    /// <code>
+    /// [RequireTrial(DeniedMessage = "This feature is part of the trial.")]
+    /// public void PreviewFeature() { /* ... */ }
+    /// </code>
+    /// </example>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class,
                     AllowMultiple = false, Inherited = true)]
     public sealed class RequireTrialAttribute : Attribute

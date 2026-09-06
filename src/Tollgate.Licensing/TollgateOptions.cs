@@ -21,17 +21,32 @@ namespace Tollgate.Licensing
 
         /// <summary>
         /// RSA public key (PEM or XML) used to verify JWT tokens issued by
-        /// the server. The server keeps the matching private key.
-        /// Optional — if empty, the client falls back to symmetric-secret verification.
+        /// the server. The server keeps the matching private key
+        /// (<c>Jwt:PrivateKey</c> in appsettings.json). This is the
+        /// recommended production setup: no secret ever ships with the client.
         /// </summary>
         public string PublicKey { get; set; } = "";
 
         /// <summary>
         /// Shared secret used for symmetric HMAC JWT verification.
         /// Only used when <see cref="PublicKey"/> is empty AND the server
-        /// is configured with symmetric signing. Avoid in production.
+        /// is configured with symmetric signing (<c>Jwt:Secret</c>).
+        /// Avoid in production — the secret can be extracted from the
+        /// client binary and used to forge tokens.
         /// </summary>
         public string SharedSecret { get; set; } = "";
+
+        /// <summary>
+        /// Expected JWT issuer. Must match <c>Jwt:Issuer</c> on the server
+        /// (default "TollgateServer").
+        /// </summary>
+        public string Issuer { get; set; } = "TollgateServer";
+
+        /// <summary>
+        /// Expected JWT audience. Must match <c>Jwt:Audience</c> on the server
+        /// (default "TollgateClient").
+        /// </summary>
+        public string Audience { get; set; } = "TollgateClient";
 
         /// <summary>Cache file name (relative to LocalApplicationData/Tollgate/).</summary>
         public string CacheFile { get; set; } = "license.dat";
@@ -43,18 +58,24 @@ namespace Tollgate.Licensing
         public TimeSpan HttpTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
         /// <summary>
-        /// Days a cached token is honored offline before re-validation is forced.
-        /// Note: the actual hard limit is the JWT expiry set by the server
-        /// (<c>Jwt:TokenLifetimeDays</c>, default 7 days). This option is a
-        /// soft limit — when exceeded, the client will attempt online
-        /// re-validation before falling back to free mode.
+        /// Days a cached token is honored offline before online re-validation
+        /// is forced. The token's own expiry (set by the server via
+        /// <c>Jwt:TokenLifetimeDays</c>, default 7 days) is always enforced
+        /// as the hard limit — the token is cryptographically verified, so it
+        /// cannot be forged to extend the grace period.
+        /// Set to 0 to force an online check on every startup.
         /// </summary>
         public int OfflineGraceDays { get; set; } = 7;
 
         /// <summary>
-        /// When false, the client throws if no license is configured.
-        /// When true (default), the client runs in "free mode" — calls to
-        /// EnsureFeature/EnsureTier still throw, but the app itself runs.
+        /// When true (default), the app runs in "free mode" with no license —
+        /// calls to LicenseGate.EnsureFeature / EnsureTier still throw
+        /// <see cref="Tollgate.Abstractions.LicenseRequiredException"/>, but
+        /// ungated code runs normally.
+        /// When false, gate checks throw
+        /// <see cref="Tollgate.Abstractions.LicenseNotConfiguredException"/>
+        /// as soon as no valid license is active — use this for apps that must
+        /// not run at all without a license.
         /// </summary>
         public bool AllowFreeMode { get; set; } = true;
     }

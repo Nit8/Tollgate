@@ -56,6 +56,18 @@ namespace Tollgate.Licensing
         /// <summary>HMAC shared secret for symmetric JWT verification. Optional.</summary>
         public string SharedSecret { get; set; } = "";
 
+        /// <summary>Expected JWT issuer — must match Jwt:Issuer on the server.</summary>
+        public string Issuer { get; set; } = "TollgateServer";
+
+        /// <summary>Expected JWT audience — must match Jwt:Audience on the server.</summary>
+        public string Audience { get; set; } = "TollgateClient";
+
+        /// <summary>Cache directory override. Null = auto per-platform location.</summary>
+        public string? CacheDirectory { get; set; }
+
+        /// <summary>HTTP timeout for server calls, in seconds.</summary>
+        public int HttpTimeoutSeconds { get; set; } = 10;
+
         /// <summary>Cache file name.</summary>
         public string CacheFile { get; set; } = "license.dat";
 
@@ -70,6 +82,8 @@ namespace Tollgate.Licensing
         private static readonly JsonSerializerOptions JsonOpts = new()
         {
             PropertyNameCaseInsensitive = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true,
             WriteIndented = true,
             Converters = { new JsonStringEnumConverter() }
         };
@@ -152,7 +166,6 @@ namespace Tollgate.Licensing
                 ServerUrl = "http://localhost:7431",
                 AppId = "my-app",
                 AppVersion = "1.0.0",
-                AdminKey = "REPLACE_WITH_YOUR_ADMIN_KEY",
                 CacheFile = "license.dat",
                 OfflineGraceDays = 7,
                 AllowFreeMode = true,
@@ -195,6 +208,10 @@ namespace Tollgate.Licensing
             AppVersion = AppVersion,
             PublicKey = PublicKey,
             SharedSecret = SharedSecret,
+            Issuer = Issuer,
+            Audience = Audience,
+            CacheDirectory = string.IsNullOrWhiteSpace(CacheDirectory) ? null : CacheDirectory,
+            HttpTimeout = TimeSpan.FromSeconds(Math.Max(1, HttpTimeoutSeconds)),
             CacheFile = CacheFile,
             OfflineGraceDays = OfflineGraceDays,
             AllowFreeMode = AllowFreeMode,

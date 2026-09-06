@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-test-pack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history for SourceLink commit embedding
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore Tollgate.slnx
+
+      - name: Build
+        run: dotnet build Tollgate.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test Tollgate.slnx -c Release --no-build --logger "console;verbosity=normal"
+
+      - name: Pack
+        run: |
+          mkdir -p artifacts/nuget
+          dotnet pack src/Tollgate.Abstractions/Tollgate.Abstractions.csproj -c Release --no-build -o artifacts/nuget
+          dotnet pack src/Tollgate.Licensing/Tollgate.Licensing.csproj -c Release --no-build -o artifacts/nuget
+          dotnet pack src/Tollgate.AspNetCore/Tollgate.AspNetCore.csproj -c Release --no-build -o artifacts/nuget
+          dotnet pack src/Tollgate.KeyGen/Tollgate.KeyGen.csproj -c Release -o artifacts/nuget
+
+      - name: Verify package output
+        shell: bash
+        run: |
+          VERSION=$(sed -n 's/.*<Version>\([^<]*\)<\/Version>.*/\1/p' Directory.Build.props | head -n 1)
+          MISSING=0
+          for pkg in Tollgate.Abstractions Tollgate.Licensing Tollgate.AspNetCore; do
+            if ! ls "artifacts/nuget/${pkg}.${VERSION}.nupkg" >/dev/null 2>&1; then
+              echo "::error::missing artifacts/nuget/${pkg}.${VERSION}.nupkg"
+              MISSING=1
+            fi
+          done
+          [ "$MISSING" = "0" ] || exit 1
+
+      - name: Upload packages artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: artifacts/nuget/*
+
+      # Optional: push to nuget.org on version tags. Add the NUGET_API_KEY
+      # repository secret, then uncomment:
+      # - name: Push to nuget.org
+      #   if: startsWith(github.ref, 'refs/tags/v')
+      #   run: |
+      #     dotnet nuget push artifacts/nuget/*.nupkg \
+      #       --api-key ${{ secrets.NUGET_API_KEY }} \
+      #       --source https://api.nuget.org/v3/index.json \
+      #       --skip-duplicate

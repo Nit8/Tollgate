@@ -10,13 +10,15 @@ dotnet add package Tollgate.Licensing
 dotnet add package Tollgate.AspNetCore
 ```
 
+Targets net8.0 and net10.0.
+
 ## Use
 
 In `Program.cs`:
 
 ```csharp
-builder.Services.AddControllers(o => o.Filters.Add<RequireFeatureFilter>());
 builder.Services.AddTollgate(builder.Configuration.GetSection("Tollgate"));
+builder.Services.AddControllers(o => o.Filters.Add<RequireFeatureFilter>());
 ```
 
 Then annotate any controller / action:
@@ -29,6 +31,9 @@ public class TodoController : Controller
 
     [RequireTier(LicenseTier.Pro)]
     public IActionResult BulkImport() => View();
+
+    [RequireTrial]
+    public IActionResult Preview() => View();   // valid trial keys only
 }
 ```
 
@@ -44,4 +49,4 @@ Unauthorized callers get a `402 Payment Required` response with a JSON body desc
 }
 ```
 
-Override `RequireFeatureFilter` to redirect to a custom upgrade page if you prefer.
+Override `RequireFeatureFilter` and its `Deny(...)` method to redirect to a custom upgrade page if you prefer.

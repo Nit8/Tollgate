@@ -26,7 +26,9 @@ namespace Tollgate.Licensing
     /// </summary>
     public static class LicenseGate
     {
-        private static LicenseClient? _client;
+        // volatile: readers of Current/Options must never observe a
+        // partially-constructed client while Configure/SetClient replaces it.
+        private static volatile LicenseClient? _client;
         private static TollgateOptions _options = new();
         private static readonly object _lock = new();
 
@@ -40,9 +42,9 @@ namespace Tollgate.Licensing
             lock (_lock)
             {
                 configure(_options);
-                // Re-create the client if already initialized
-                _client?.Dispose();
+                var old = _client;
                 _client = new LicenseClient(_options);
+                old?.Dispose();
             }
         }
 
@@ -53,8 +55,9 @@ namespace Tollgate.Licensing
             lock (_lock)
             {
                 _options = options;
-                _client?.Dispose();
+                var old = _client;
                 _client = new LicenseClient(_options);
+                old?.Dispose();
             }
         }
 
@@ -122,11 +125,15 @@ namespace Tollgate.Licensing
         /// <summary>Allow DI containers to inject the client after creation.</summary>
         public static void SetClient(LicenseClient client)
         {
+            ArgumentNullException.ThrowIfNull(client);
             lock (_lock)
             {
-                _client?.Dispose();
+                var old = _client;
                 _client = client;
                 _options = client.Options;
+                // The DI container owns the new client's lifecycle; disposing
+                // it here would yank it out from under the container.
+                if (old is not null && !ReferenceEquals(old, client)) old.Dispose();
             }
         }
 
@@ -140,31 +147,46 @@ namespace Tollgate.Licensing
         public static TollgateOptions Options => _options;
 
         /// <summary>
-        /// Try to load a previously-activated license from disk cache.
-        /// Returns true if a valid (cached or re-validated) license was found.
+        /// Try to load a previously-activated license from the encrypted disk
+        /// cache. The cached token is cryptographically verified (see
+        /// <see cref="LicenseClient"/>). Returns true if a valid (cached or
+        /// re-validated) license was found.
         /// </summary>
-        public static async Task<bool> TryLoadSavedLicenseAsync()
+        public static Task<bool> TryLoadSavedLicenseAsync(CancellationToken cancellationToken = default)
         {
             EnsureClient();
-            return await _client!.TryLoadSavedLicenseAsync();
+            return _client!.TryLoadSavedLicenseAsync(cancellationToken);
         }
 
         /// <summary>
-        /// Alias for <see cref="TryLoadSavedLicenseAsync"/>. Convenience
+        /// Alias for <see cref="TryLoadSavedLicenseAsync(CancellationToken)"/>. Convenience
         /// for the common startup pattern.
         /// </summary>
-        public static Task<bool> InitializeAsync() => TryLoadSavedLicenseAsync();
+        public static Task<bool> InitializeAsync(CancellationToken cancellationToken = default)
+            => TryLoadSavedLicenseAsync(cancellationToken);
 
         /// <summary>
         /// Activate a license key. On success, <see cref="Current"/> is updated.
         /// </summary>
-        public static async Task<ValidateLicenseResponse> ActivateKeyAsync(string licenseKey)
+        public static Task<ValidateLicenseResponse> ActivateKeyAsync(
+            string licenseKey, CancellationToken cancellationToken = default)
         {
             EnsureClient();
-            return await _client!.ActivateKeyAsync(licenseKey);
+            return _client!.ActivateKeyAsync(licenseKey, cancellationToken);
         }
 
-        /// <summary>Remove the cached license and reset state.</summary>
+        /// <summary>
+        /// Release the machine binding of the current license on the server
+        /// (license transfer to another machine) and clear the local cache.
+        /// </summary>
+        public static Task<ValidateLicenseResponse> DeactivateAsync(
+            CancellationToken cancellationToken = default)
+        {
+            EnsureClient();
+            return _client!.DeactivateAsync(cancellationToken);
+        }
+
+        /// <summary>Remove the cached license and reset state (local only).</summary>
         public static void ClearLicense()
         {
             _client?.ClearLicense();
@@ -180,32 +202,52 @@ namespace Tollgate.Licensing
 
         /// <summary>
         /// Throw <see cref="LicenseRequiredException"/> if the current license
-        /// lacks the named feature.
+        /// lacks the named feature. Throws <see cref="LicenseNotConfiguredException"/>
+        /// instead when no license is active and <see cref="TollgateOptions.AllowFreeMode"/>
+        /// is false.
         /// </summary>
         public static void EnsureFeature(string feature)
         {
+            EnsureConfigured();
             if (!Current.HasFeature(feature))
                 throw new LicenseRequiredException(feature, Current.Tier);
         }
 
         /// <summary>
         /// Throw <see cref="LicenseRequiredException"/> if the current license's
-        /// tier is below the required one.
+        /// tier is below the required one. Throws <see cref="LicenseNotConfiguredException"/>
+        /// instead when no license is active and <see cref="TollgateOptions.AllowFreeMode"/>
+        /// is false.
         /// </summary>
         public static void EnsureTier(LicenseTier tier)
         {
+            EnsureConfigured();
             if (!Current.MeetsTier(tier))
                 throw new LicenseRequiredException(tier, Current.Tier);
         }
 
         /// <summary>
+        /// Throw <see cref="LicenseRequiredException"/> unless the current
+        /// license is a valid trial (a valid key with tier None).
+        /// </summary>
+        public static void EnsureTrial()
+        {
+            EnsureConfigured();
+            if (!Current.IsTrial)
+                throw new LicenseRequiredException(
+                    "This action is only available during the trial period.");
+        }
+
+        /// <summary>
         /// Reflect on the given method (or type) and enforce every
-        /// <see cref="RequireFeatureAttribute"/> and <see cref="RequireTierAttribute"/>
-        /// on it. Throw <see cref="LicenseRequiredException"/> on first failure.
+        /// <see cref="RequireFeatureAttribute"/>, <see cref="RequireTierAttribute"/>
+        /// and <see cref="RequireTrialAttribute"/> on it. Throw
+        /// <see cref="LicenseRequiredException"/> on first failure.
         /// </summary>
         public static void EnsureAccessFor(MethodInfo method)
         {
             ArgumentNullException.ThrowIfNull(method);
+            EnsureConfigured();
 
             foreach (var attr in method.GetCustomAttributes<RequireTierAttribute>())
                 if (!Current.MeetsTier(attr.Tier))
@@ -214,6 +256,11 @@ namespace Tollgate.Licensing
             foreach (var attr in method.GetCustomAttributes<RequireFeatureAttribute>())
                 if (!Current.HasFeature(attr.Feature))
                     throw new LicenseRequiredException(attr.Feature, Current.Tier);
+
+            foreach (var attr in method.GetCustomAttributes<RequireTrialAttribute>())
+                if (!Current.IsTrial)
+                    throw new LicenseRequiredException(
+                        attr.DeniedMessage ?? "This action is only available during the trial period.");
         }
 
         /// <summary>
@@ -222,6 +269,7 @@ namespace Tollgate.Licensing
         public static void EnsureAccessFor(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
+            EnsureConfigured();
 
             foreach (var attr in type.GetCustomAttributes<RequireTierAttribute>())
                 if (!Current.MeetsTier(attr.Tier))
@@ -230,6 +278,11 @@ namespace Tollgate.Licensing
             foreach (var attr in type.GetCustomAttributes<RequireFeatureAttribute>())
                 if (!Current.HasFeature(attr.Feature))
                     throw new LicenseRequiredException(attr.Feature, Current.Tier);
+
+            foreach (var attr in type.GetCustomAttributes<RequireTrialAttribute>())
+                if (!Current.IsTrial)
+                    throw new LicenseRequiredException(
+                        attr.DeniedMessage ?? "This action is only available during the trial period.");
         }
 
         /// <summary>
@@ -244,6 +297,21 @@ namespace Tollgate.Licensing
         }
 
         // ── Internals ─────────────────────────────────────────────
+
+        /// <summary>
+        /// Strict-mode enforcement: when no license is active and
+        /// AllowFreeMode is false, the app must not run — fail hard with
+        /// <see cref="LicenseNotConfiguredException"/> instead of a feature
+        /// denial that looks like an upsell prompt.
+        /// </summary>
+        private static void EnsureConfigured()
+        {
+            if (!Current.IsValid && !_options.AllowFreeMode)
+                throw new LicenseNotConfiguredException(
+                    "No license is active and AllowFreeMode is disabled. " +
+                    "Activate a license before using gated features.");
+        }
+
         private static void EnsureClient()
         {
             if (_client is null)

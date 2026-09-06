@@ -1,7 +1,9 @@
 #!/usr/bin/env pwsh
 # ─────────────────────────────────────────────────────────────
 #  Tollgate build script (Windows PowerShell)
-#  Builds the solution and packs NuGet packages into ./artifacts/nuget/
+#  Builds the solution, runs the tests, and packs the NuGet
+#  packages into ./artifacts/nuget/ — then verifies all expected
+#  packages actually exist before reporting success.
 # ─────────────────────────────────────────────────────────────
 param(
     [string]$Config = "Release"
@@ -9,26 +11,56 @@ param(
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSCommandPath
+$sln = Join-Path $root "Tollgate.slnx"
 
 Write-Host "==> Restoring..." -ForegroundColor Cyan
-dotnet restore "$root/Tollgate.slnx"
+dotnet restore $sln
 
 Write-Host "==> Building ($Config)..." -ForegroundColor Cyan
-dotnet build "$root/Tollgate.slnx" -c $Config --no-restore
+dotnet build $sln -c $Config --no-restore
+
+Write-Host "==> Running tests..." -ForegroundColor Cyan
+dotnet test $sln -c $Config --no-build
 
 Write-Host "==> Packing NuGet packages..." -ForegroundColor Cyan
-$nugetPath = "$root/artifacts/nuget"
+$nugetPath = Join-Path $root "artifacts/nuget"
 New-Item -ItemType Directory -Force -Path $nugetPath | Out-Null
 
-dotnet pack "$root/src/Tollgate.Abstractions/Tollgate.Abstractions.csproj" `
+dotnet pack (Join-Path $root "src/Tollgate.Abstractions/Tollgate.Abstractions.csproj") `
     -c $Config --no-build -o $nugetPath
 
-dotnet pack "$root/src/Tollgate.Licensing/Tollgate.Licensing.csproj" `
+dotnet pack (Join-Path $root "src/Tollgate.Licensing/Tollgate.Licensing.csproj") `
     -c $Config --no-build -o $nugetPath
 
-dotnet pack "$root/src/Tollgate.AspNetCore/Tollgate.AspNetCore.csproj" `
+dotnet pack (Join-Path $root "src/Tollgate.AspNetCore/Tollgate.AspNetCore.csproj") `
     -c $Config --no-build -o $nugetPath
+
+# Optional: also pack the KeyGen CLI as a .NET global tool.
+if ($env:PACK_KEYGEN -eq "1") {
+    dotnet pack (Join-Path $root "src/Tollgate.KeyGen/Tollgate.KeyGen.csproj") `
+        -c $Config -o $nugetPath
+}
 
 Write-Host ""
-Write-Host "✓ Done!" -ForegroundColor Green
+Write-Host "==> Verifying package output..." -ForegroundColor Cyan
+$version = (Select-String -Path (Join-Path $root "Directory.Build.props") `
+    -Pattern '<Version>([^<]+)</Version>').Matches[0].Groups[1].Value
+$missing = @()
+foreach ($pkg in @("Tollgate.Abstractions", "Tollgate.Licensing", "Tollgate.AspNetCore")) {
+    $file = Join-Path $nugetPath "$pkg.$version.nupkg"
+    if (Test-Path $file) {
+        Write-Host "  OK  $pkg.$version.nupkg"
+    }
+    else {
+        Write-Host "  MISSING  $pkg.$version.nupkg" -ForegroundColor Red
+        $missing += $pkg
+    }
+}
+if ($missing.Count -gt 0) {
+    throw "Package verification FAILED — not all packages were produced: $($missing -join ', ')"
+}
+
+Write-Host ""
+Write-Host "Done." -ForegroundColor Green
 Write-Host "  NuGet packages: $nugetPath"
+Write-Host "  Version:        $version"

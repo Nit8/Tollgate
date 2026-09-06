@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Tollgate.Abstractions.Dtos;
 using Tollgate.Abstractions.Enums;
@@ -11,11 +12,13 @@ namespace Tollgate.Server.Controllers;
 //  LICENSE CONTROLLER  — public endpoint (no admin key required)
 //  POST /api/license/validate
 //  POST /api/license/verify-token
+//  POST /api/license/deactivate
 //  GET  /api/license/health
 // ─────────────────────────────────────────────────────────────
 
 [ApiController]
 [Route("api/license")]
+[EnableRateLimiting("api")]
 public class LicenseController : ControllerBase
 {
     private readonly LicenseDbContext _db;
@@ -34,6 +37,7 @@ public class LicenseController : ControllerBase
     /// <summary>
     /// Called by client apps on startup or activation.
     /// Returns tier + features + a signed JWT the client caches locally.
+    /// Also records a telemetry heartbeat (LastSeenAt / LastAppVersion).
     /// </summary>
     [HttpPost("validate")]
     public async Task<ActionResult<ValidateLicenseResponse>> Validate(
@@ -64,7 +68,8 @@ public class LicenseController : ControllerBase
             return Ok(Fail("This license key has expired."));
 
         // ── Machine binding ───────────────────────────────────
-        if (entity.MachineId is null)
+        bool firstActivation = entity.MachineId is null;
+        if (firstActivation)
         {
             entity.MachineId   = req.MachineId;
             entity.ActivatedAt = DateTime.UtcNow;
@@ -76,10 +81,14 @@ public class LicenseController : ControllerBase
             _log.LogWarning("Key {Key} rejected — machine mismatch", normalizedKey);
             return Ok(Fail(
                 "This license is already activated on a different machine. " +
-                "Contact support to transfer your license."));
+                "Deactivate it there first, or contact support to transfer your license."));
         }
 
+        // UseCount counts activations + check-ins; LastSeenAt gives the
+        // honest "when was this license last seen" telemetry.
         entity.UseCount++;
+        entity.LastSeenAt     = DateTime.UtcNow;
+        entity.LastAppVersion = string.IsNullOrWhiteSpace(req.AppVersion) ? null : req.AppVersion;
         await _db.SaveChangesAsync();
 
         var features = entity.FeaturesList;
@@ -92,7 +101,9 @@ public class LicenseController : ControllerBase
             IsValid   = true,
             Tier      = entity.Tier,
             Features  = features,
-            Message   = $"License valid — {entity.Tier} tier activated.",
+            Message   = firstActivation
+                ? $"License valid — {entity.Tier} tier activated."
+                : $"License valid — {entity.Tier} tier.",
             ExpiresAt = entity.ExpiresAt,
             Token     = token,
             AppId     = req.AppId
@@ -100,6 +111,11 @@ public class LicenseController : ControllerBase
     }
 
     // ── VERIFY CACHED TOKEN ──────────────────────────────────
+    /// <summary>
+    /// Server-side verification of a cached JWT — full signature, issuer,
+    /// audience and lifetime validation (the same checks the client applies
+    /// locally with the public key).
+    /// </summary>
     [HttpPost("verify-token")]
     public ActionResult<ValidateLicenseResponse> VerifyToken(
         [FromBody] VerifyTokenRequest req)
@@ -108,7 +124,7 @@ public class LicenseController : ControllerBase
         if (principal is null)
             return Ok(Fail("Cached token is invalid or expired. Please re-activate."));
 
-        var tierStr = principal.FindFirst("tier")?.Value ?? "None";
+        var tierStr = principal.FindFirst("tier")?.Value ?? "";
         var mid     = principal.FindFirst("mid")?.Value  ?? "";
         var app     = principal.FindFirst("app")?.Value  ?? "";
         var feat    = principal.FindFirst("feat")?.Value ?? "";
@@ -119,7 +135,7 @@ public class LicenseController : ControllerBase
         if (!string.IsNullOrEmpty(app) && app != req.AppId)
             return Ok(Fail("Token app mismatch."));
 
-        Enum.TryParse(tierStr, out LicenseTier tier);
+        Enum.TryParse(tierStr, ignoreCase: true, out LicenseTier tier);
 
         return Ok(new ValidateLicenseResponse
         {
@@ -133,6 +149,55 @@ public class LicenseController : ControllerBase
         });
     }
 
+    // ── DEACTIVATE (license transfer by the end user) ────────
+    /// <summary>
+    /// Lets an end user release the machine binding of their own license
+    /// (e.g. moving to a new machine) without an admin round-trip. The
+    /// request must come from the machine the key is currently bound to.
+    /// </summary>
+    [HttpPost("deactivate")]
+    public async Task<ActionResult<ValidateLicenseResponse>> Deactivate(
+        [FromBody] DeactivateLicenseRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.LicenseKey) ||
+            string.IsNullOrWhiteSpace(req.MachineId) ||
+            string.IsNullOrWhiteSpace(req.AppId))
+        {
+            return BadRequest(Fail("LicenseKey, MachineId, and AppId are required."));
+        }
+
+        var normalizedKey = req.LicenseKey.Trim().ToUpperInvariant();
+
+        var entity = await _db.LicenseKeys
+            .FirstOrDefaultAsync(k => k.AppId == req.AppId && k.LicenseKey == normalizedKey);
+
+        if (entity is null)
+            return Ok(Fail("License key not found for this application."));
+
+        if (entity.MachineId is not null && entity.MachineId != req.MachineId)
+        {
+            _log.LogWarning("Deactivation rejected — machine mismatch (key {Key})", normalizedKey);
+            return Ok(Fail(
+                "This license is activated on a different machine. " +
+                "Deactivation must be requested from the bound machine, " +
+                "or by an admin via /api/admin/reset-machine."));
+        }
+
+        entity.MachineId   = null;
+        entity.ActivatedAt = null;
+        await _db.SaveChangesAsync();
+
+        _log.LogInformation("Key {Key} deactivated from machine {MID}",
+                            normalizedKey, req.MachineId);
+        return Ok(new ValidateLicenseResponse
+        {
+            IsValid = true,
+            Tier    = entity.Tier,
+            Message = "License deactivated. The key can now be activated on another machine."
+        });
+    }
+
+    /// <summary>Liveness probe (used by Docker healthcheck and uptime monitors).</summary>
     [HttpGet("health")]
     public IActionResult Health() =>
         Ok(new { status = "ok", service = "Tollgate.Server", time = DateTime.UtcNow });

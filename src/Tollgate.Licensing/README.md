@@ -9,6 +9,8 @@ dotnet add package Tollgate.Abstractions
 dotnet add package Tollgate.Licensing
 ```
 
+Targets net8.0, net10.0 and net10.0-windows (the Windows target adds WMI fingerprinting and DPAPI cache encryption).
+
 ## Quick start (Console / WinForms / WPF)
 
 ```csharp
@@ -19,10 +21,14 @@ LicenseGate.Configure(options =>
 {
     options.ServerUrl = "https://license.myapp.com";
     options.AppId     = "my-todo-app";
-    options.CacheFile  = "license.dat";  // optional, default = license.dat
+
+    // REQUIRED for offline caching: one of these lets the client
+    // cryptographically verify cached JWTs (fail-closed without one).
+    options.PublicKey = "-----BEGIN PUBLIC KEY-----...";   // recommended
+    // options.SharedSecret = "<Jwt:Secret from the server>";
 });
 
-// 2. Try to load existing license (offline-first)
+// 2. Try to load existing license (verified cache first, then online)
 var loaded = await LicenseGate.TryLoadSavedLicenseAsync();
 if (!loaded)
 {
@@ -42,16 +48,26 @@ LicenseGate.EnsureTier(LicenseTier.Pro);    // throws LicenseRequiredException
 ```csharp
 // Program.cs
 builder.Services.AddTollgate(builder.Configuration.GetSection("Tollgate"));
-
-// Controllers
-[RequireFeature("export-pdf")]
-public IActionResult Export() => View();
 ```
+
+See `Tollgate.AspNetCore` for the automatic MVC filter.
+
+## Security model
+
+Cached tokens are **verified, never trusted**:
+
+- JWT **signature** (RSA public key or HMAC shared secret from options)
+- **Issuer** and **audience** claims
+- **Expiry** (with 5-minute clock skew)
+- **Machine binding** (`mid` claim must match this machine's fingerprint)
+- **App binding** (`app` claim must match your `AppId`)
+
+Without a configured key, offline validation is disabled and every launch re-validates online (fail closed). When the grace period expires, an unreachable server does *not* re-honor a stale token. Tokens returned by the server during activation are also verified before being trusted — a man-in-the-middle cannot substitute its own response on plain HTTP.
 
 ## Auto-scaffolded config file
 
 When you `dotnet add package Tollgate.Licensing` and build, an MSBuild target
 inside the package auto-creates `tollgate.json` in your project directory. Just
-edit `appId` and (optionally) `adminKey`. The client auto-discovers it at runtime.
+edit `appId` and (optionally) `publicKey`. The client auto-discovers it at runtime.
 
 See the [main README](https://github.com/your-org/tollgate) for the full guide.

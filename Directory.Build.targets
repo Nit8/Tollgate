@@ -1,0 +1,23 @@
+<Project>
+
+  <!--
+    ═══════════════════════════════════════════════════════════════
+      Shared items — must be a .targets file (imported AFTER each
+      project body) so conditions like IsPackable evaluate correctly.
+    ═══════════════════════════════════════════════════════════════
+  -->
+
+  <!--
+    Every packable project gets the repo-root icon.png embedded and
+    SourceLink wired up. The SourceLink version comes from
+    Directory.Packages.props (Central Package Management forbids
+    direct Version attributes on PackageReference items).
+  -->
+  <ItemGroup Condition="'$(IsPackable)' != 'false'">
+    <None Include="$(MSBuildThisFileDirectory)icon.png"
+          Pack="true" PackagePath="\" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub"
+                      PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>

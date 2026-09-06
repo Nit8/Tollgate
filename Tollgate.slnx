@@ -5,4 +5,5 @@
   <Project Path="src/Tollgate.KeyGen/Tollgate.KeyGen.csproj" />
   <Project Path="src/Tollgate.Licensing/Tollgate.Licensing.csproj" />
   <Project Path="src/Tollgate.Server/Tollgate.Server.csproj" />
+  <Project Path="tests/Tollgate.Core.Tests/Tollgate.Core.Tests.csproj" />
 </Solution>
