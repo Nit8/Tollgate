@@ -24,7 +24,7 @@ namespace Tollgate.Samples.ConsoleApp
             // ?? STEP 1 — configure ????????????????????????????????????????
             LicenseGate.Configure(o =>
             {
-                o.ServerUrl = "http://localhost:5000";
+                o.ServerUrl = "http://localhost:7431";
                 o.AppId = "sample-todo-console";
                 o.AppVersion = "1.0.0";
                 o.CacheFile = "license.dat";
