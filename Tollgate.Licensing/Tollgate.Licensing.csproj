@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\src\Tollgate.Abstractions\Tollgate.Abstractions.csproj" />
+  </ItemGroup>
+
 </Project>
