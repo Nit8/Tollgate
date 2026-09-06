@@ -38,6 +38,15 @@ namespace Tollgate.Abstractions
         /// <summary>Human-readable status message from the server.</summary>
         public string Message { get; init; } = "";
 
+
+        /// <summary>True if this license includes the named feature.</summary>
+        public bool HasFeature(string feature) =>
+            Features.Contains(feature, StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>True if this license's tier meets or exceeds the requirement.</summary>
+        public bool MeetsTier(LicenseTier required) =>
+            LicenseTiers.Meets(Tier, required);
+
         // ── Convenience predicates ─────────────────────────────────
 
         public bool IsLicensed => Tier != LicenseTier.None && IsValid;
@@ -49,5 +58,4 @@ namespace Tollgate.Abstractions
 
         public static LicenseState Empty => new();
     }
-
 }

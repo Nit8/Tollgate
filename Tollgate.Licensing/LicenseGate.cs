@@ -145,6 +145,7 @@ namespace Tollgate.Licensing
         /// </summary>
         public static async Task<bool> TryLoadSavedLicenseAsync()
         {
+            EnsureClient();
             return await _client!.TryLoadSavedLicenseAsync();
         }
 
@@ -159,6 +160,7 @@ namespace Tollgate.Licensing
         /// </summary>
         public static async Task<ValidateLicenseResponse> ActivateKeyAsync(string licenseKey)
         {
+            EnsureClient();
             return await _client!.ActivateKeyAsync(licenseKey);
         }
 
@@ -166,6 +168,92 @@ namespace Tollgate.Licensing
         public static void ClearLicense()
         {
             _client?.ClearLicense();
+        }
+
+        // ── FEATURE / TIER CHECKS ────────────────────────────────
+
+        /// <summary>True if the current license has the named feature.</summary>
+        public static bool CanAccess(string feature) => Current.HasFeature(feature);
+
+        /// <summary>True if the current license's tier meets or exceeds the requirement.</summary>
+        public static bool CanAccess(LicenseTier required) => Current.MeetsTier(required);
+
+        /// <summary>
+        /// Throw <see cref="LicenseRequiredException"/> if the current license
+        /// lacks the named feature.
+        /// </summary>
+        public static void EnsureFeature(string feature)
+        {
+            if (!Current.HasFeature(feature))
+                throw new LicenseRequiredException(feature, Current.Tier);
+        }
+
+        /// <summary>
+        /// Throw <see cref="LicenseRequiredException"/> if the current license's
+        /// tier is below the required one.
+        /// </summary>
+        public static void EnsureTier(LicenseTier tier)
+        {
+            if (!Current.MeetsTier(tier))
+                throw new LicenseRequiredException(tier, Current.Tier);
+        }
+
+        /// <summary>
+        /// Reflect on the given method (or type) and enforce every
+        /// <see cref="RequireFeatureAttribute"/> and <see cref="RequireTierAttribute"/>
+        /// on it. Throw <see cref="LicenseRequiredException"/> on first failure.
+        /// </summary>
+        public static void EnsureAccessFor(MethodInfo method)
+        {
+            ArgumentNullException.ThrowIfNull(method);
+
+            foreach (var attr in method.GetCustomAttributes<RequireTierAttribute>())
+                if (!Current.MeetsTier(attr.Tier))
+                    throw new LicenseRequiredException(attr.Tier, Current.Tier);
+
+            foreach (var attr in method.GetCustomAttributes<RequireFeatureAttribute>())
+                if (!Current.HasFeature(attr.Feature))
+                    throw new LicenseRequiredException(attr.Feature, Current.Tier);
+        }
+
+        /// <summary>
+        /// Reflect on the given type and enforce attributes declared on it.
+        /// </summary>
+        public static void EnsureAccessFor(Type type)
+        {
+            ArgumentNullException.ThrowIfNull(type);
+
+            foreach (var attr in type.GetCustomAttributes<RequireTierAttribute>())
+                if (!Current.MeetsTier(attr.Tier))
+                    throw new LicenseRequiredException(attr.Tier, Current.Tier);
+
+            foreach (var attr in type.GetCustomAttributes<RequireFeatureAttribute>())
+                if (!Current.HasFeature(attr.Feature))
+                    throw new LicenseRequiredException(attr.Feature, Current.Tier);
+        }
+
+        /// <summary>
+        /// Reflect on the calling method (via stack walk) and enforce attributes.
+        /// Use sparingly — reflection-based stack walking is slow.
+        /// </summary>
+        public static void EnsureAccessForCaller()
+        {
+            var frame = new System.Diagnostics.StackFrame(1);
+            var method = frame.GetMethod();
+            if (method is MethodInfo mi) EnsureAccessFor(mi);
+        }
+
+        // ── Internals ─────────────────────────────────────────────
+        private static void EnsureClient()
+        {
+            if (_client is null)
+            {
+                lock (_lock)
+                {
+                    if (_client is null)
+                        _client = new LicenseClient(_options);
+                }
+            }
         }
     }
 }
