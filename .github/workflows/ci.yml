@@ -10,6 +10,11 @@ on:
 jobs:
   build-test-pack:
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      id-token: write
+      
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,12 +62,20 @@ jobs:
           name: nuget-packages
           path: artifacts/nuget/*
 
-      # Optional: push to nuget.org on version tags. Add the NUGET_API_KEY
-      # repository secret, then uncomment:
-      # - name: Push to nuget.org
-      #   if: startsWith(github.ref, 'refs/tags/v')
-      #   run: |
-      #     dotnet nuget push artifacts/nuget/*.nupkg \
-      #       --api-key ${{ secrets.NUGET_API_KEY }} \
-      #       --source https://api.nuget.org/v3/index.json \
-      #       --skip-duplicate
+      - name: NuGet login (trusted publishing)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: quantum
+
+      - name: Push to nuget.org
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          for pkg in artifacts/nuget/*.nupkg; do
+            dotnet nuget push "$pkg" \
+              --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+
