@@ -21,7 +21,7 @@ mkdir -p "$NUGET_PATH"
 dotnet pack "$ROOT/src/Tollgate.Abstractions/Tollgate.Abstractions.csproj" \
     -c "$CONFIG" --no-build -o "$NUGET_PATH"
 
-dotnet pack "$ROOT/Tollgate.Licensing/Tollgate.Licensing.csproj" \
+dotnet pack "$ROOT/src/Tollgate.Licensing/Tollgate.Licensing.csproj" \
     -c "$CONFIG" --no-build -o "$NUGET_PATH"
 
 dotnet pack "$ROOT/src/Tollgate.AspNetCore/Tollgate.AspNetCore.csproj" \

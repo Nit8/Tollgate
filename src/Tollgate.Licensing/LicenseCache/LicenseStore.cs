@@ -7,7 +7,7 @@ using Tollgate.Abstractions.Enums;
 
 namespace Tollgate.Licensing.LicenseCache
 {
-    internal sealed class LicenseCache
+    internal sealed class LicenseStore
     {
         // ─────────────────────────────────────────────────────────────
         //  ENCRYPTED LOCAL CACHE
@@ -26,7 +26,7 @@ namespace Tollgate.Licensing.LicenseCache
         // ─────────────────────────────────────────────────────────────
         private readonly string _path;
 
-        public LicenseCache(TollgateOptions options)
+        public LicenseStore(TollgateOptions options)
         {
             var dir = !string.IsNullOrWhiteSpace(options.CacheDirectory)
                 ? options.CacheDirectory

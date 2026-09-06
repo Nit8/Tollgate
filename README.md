@@ -128,7 +128,7 @@ cd Tollgate
 dotnet run --project src/Tollgate.Server
 ```
 
-Server is at `http://localhost:5000`. Swagger UI at `http://localhost:5000/swagger`.
+Server is at `http://localhost:7431`. Swagger UI at `http://localhost:7431/swagger`.
 </details>
 
 <details>
@@ -188,7 +188,7 @@ LicenseGate.ConfigureFromConfigFile();
 // OR configure programmatically:
 LicenseGate.Configure(o =>
 {
-    o.ServerUrl = "http://localhost:5000";
+    o.ServerUrl = "http://localhost:7431";
     o.AppId     = "my-todo-app";
 });
 
@@ -339,7 +339,7 @@ Drop a `tollgate.json` file in your project. Tollgate auto-discovers it on start
 
 ```json
 {
-  "serverUrl": "http://localhost:5000",
+  "serverUrl": "http://localhost:7431",
   "appId": "my-app",
   "appVersion": "1.0.0",
   "adminKey": "REPLACE_WITH_YOUR_ADMIN_KEY",
@@ -449,7 +449,7 @@ $ dotnet run --project src/Tollgate.KeyGen -- init
 
 | Property            | Default            | Description |
 |---------------------|--------------------|-------------|
-| `ServerUrl`         | `http://localhost:5000` | Tollgate server URL |
+| `ServerUrl`         | `http://localhost:7431` | Tollgate server URL |
 | `AppId`             | `"default"`        | Your application ID (must match a registered app on the server) |
 | `AppVersion`        | `"1.0.0"`          | Reported to the server for analytics |
 | `PublicKey`         | `""`               | RSA public key (PEM) for asymmetric JWT verification. Empty = use shared secret. |
@@ -469,7 +469,7 @@ $ dotnet run --project src/Tollgate.KeyGen -- init
 | `Jwt:Audience` | `TollgateClient`     | JWT `aud` claim |
 | `Jwt:TokenLifetimeDays` | `7` | How long the client can go without re-validating |
 | `Admin:Key`    | (strong password)   | Admin password for `/api/admin/*`. **Change in production!** |
-| `Urls`         | `http://0.0.0.0:5000` | Kestrel bind URL |
+| `Urls`         | `http://0.0.0.0:7431` | Kestrel bind URL |
 
 ---
 
