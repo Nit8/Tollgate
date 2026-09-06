@@ -63,7 +63,7 @@ namespace Tollgate.KeyGen
                 AnsiConsole.MarkupLine("[grey]Run with `init` to create one, OR enter values below for this session only.[/]\n");
 
                 var envServer = Environment.GetEnvironmentVariable("TOLLGATE_SERVER")
-                                ?? "http://localhost:5000";
+                                ?? "http://localhost:7431";
                 var envAdmin = Environment.GetEnvironmentVariable("TOLLGATE_ADMIN_KEY")
                                 ?? "";
 

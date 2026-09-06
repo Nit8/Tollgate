@@ -6,7 +6,7 @@ using Tollgate.Abstractions.Enums;
 namespace Tollgate.Licensing.LicenseCache
 {
     // ── On-disk JSON shape (encrypted as a whole) ───────────
-    public sealed class CachePayload
+    internal sealed class CachePayload
     {
         public string LicenseKey { get; set; } = "";
         public string Token { get; set; } = "";

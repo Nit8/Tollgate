@@ -1,6 +1,7 @@
 
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Tollgate.Server.Data;
 using Tollgate.Server.Services;
 
 namespace Tollgate.Server
@@ -12,8 +13,8 @@ namespace Tollgate.Server
             // ─────────────────────────────────────────────────────────────
             //  Tollgate Server  —  self-hostable license & keygen API
             //
-            //  Default URL:  http://0.0.0.0:5000
-            //  Swagger UI:   http://localhost:5000/swagger
+            //  Default URL:  http://0.0.0.0:7431
+            //  Swagger UI:   http://localhost:7431/swagger
             //  SQLite file:  licenses.db (auto-created next to the binary)
             // ─────────────────────────────────────────────────────────────
 

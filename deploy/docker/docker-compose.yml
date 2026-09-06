@@ -1,0 +1,36 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────
+#  Tollgate Server — one-command deploy
+#
+#  1.  Edit .env to set your secrets
+#  2.  Run:
+#          docker compose up -d --build
+#  3.  Visit  http://localhost:7431/swagger
+# ─────────────────────────────────────────────────────────────
+
+services:
+  tollgate:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    container_name: tollgate-server
+    restart: unless-stopped
+    ports:
+      - "7431:7431"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Jwt__Secret=${TOLLGATE_JWT_SECRET}
+      - Admin__Key=${TOLLGATE_ADMIN_KEY}
+      - Jwt__TokenLifetimeDays=7
+    volumes:
+      - tollgate-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:7431/api/license/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  tollgate-data:

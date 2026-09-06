@@ -1,0 +1,17 @@
+bin/
+obj/
+artifacts/
+dist/
+publish/
+*.user
+*.suo
+.vs/
+.vscode/
+.idea/
+.git/
+.gitignore
+**/licenses.db
+**/licenses.db-*
+**/*.dat
+**/.env
+**/tollgate.json

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    ═══════════════════════════════════════════════════════════════
+      Tollgate.Licensing — auto-scaffold tollgate.json
+
+      When a project references the Tollgate.Licensing NuGet package,
+      this target runs on every build and:
+
+      1. Looks for an existing tollgate.json in the project directory.
+         If found, does nothing.
+      2. If NOT found, copies the template from this package's build/
+         folder into the project directory as tollgate.json.
+
+      The template is pre-filled with sensible defaults so the project
+      compiles out of the box. The user just fills in appId and
+      adminKey (if they want to use the KeyGen CLI from the same
+      project).
+
+      A .gitignore entry is also suggested via a build message —
+      tollgate.json may contain secrets.
+    ═══════════════════════════════════════════════════════════════
+  -->
+
+  <PropertyGroup>
+    <TollgateConfigFile>$(MSBuildProjectDirectory)\tollgate.json</TollgateConfigFile>
+    <TollgateTemplateFile>$(MSBuildThisFileDirectory)tollgate.template.json</TollgateTemplateFile>
+  </PropertyGroup>
+
+  <Target Name="TollgateEnsureConfigFile"
+          BeforeTargets="Build"
+          Condition="!Exists('$(TollgateConfigFile)') And Exists('$(TollgateTemplateFile)')">
+
+    <Copy SourceFiles="$(TollgateTemplateFile)"
+          DestinationFiles="$(TollgateConfigFile)" />
+
+    <Message Text="═══════════════════════════════════════════════════════════════"
+             Importance="high" />
+    <Message Text="  Tollgate: created tollgate.json in your project directory."
+             Importance="high" />
+    <Message Text="  Edit it to set your appId and (optionally) adminKey."
+             Importance="high" />
+    <Message Text="  Add tollgate.json to .gitignore if it contains secrets!"
+             Importance="high" />
+    <Message Text="═══════════════════════════════════════════════════════════════"
+             Importance="high" />
+  </Target>
+
+  <!--
+    Make sure tollgate.json is copied to the output directory at runtime,
+    so LicenseGate.ConfigureFromConfigFile() can find it next to the binary.
+  -->
+  <ItemGroup Condition="Exists('$(TollgateConfigFile)')">
+    <None Include="$(TollgateConfigFile)"
+          Pack="false"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

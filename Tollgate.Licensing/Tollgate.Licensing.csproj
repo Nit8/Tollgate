@@ -1,18 +1,67 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <!-- Multi-target: net10.0 for cross-platform, net10.0-windows for WMI + DPAPI -->
+    <TargetFrameworks>net10.0;net10.0-windows</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Tollgate.Licensing</RootNamespace>
+
+    <!-- NuGet packaging metadata -->
+    <PackageId>Tollgate.Licensing</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Tollgate</Authors>
+    <Company>Tollgate</Company>
+    <Product>Tollgate</Product>
+    <Description>
+      Drop-in SaaS licensing for any .NET app (Console, ASP.NET Core, WinForms, WPF).
+      Validates licenses against a self-hostable Tollgate server, caches them
+      encrypted on disk, and gates features via [RequireFeature] / [RequireTier]
+      attributes. Cross-platform machine fingerprinting. Offline grace period.
+    </Description>
+    <Summary>Drop-in SaaS licensing client — [RequireFeature] gating, offline cache, JWT.</Summary>
+    <PackageTags>licensing;saas;subscription;feature;toggle;tollgate;dotnet;nuget;wpf;winforms;aspnet</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/your-org/tollgate</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/your-org/tollgate</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
   </PropertyGroup>
 
+  <!-- Windows-only packages — pulled in only when targeting net10.0-windows -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <PackageReference Include="System.Management" Version="10.0.0" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
+  </ItemGroup>
+
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\src\Tollgate.Abstractions\Tollgate.Abstractions.csproj" />
+  </ItemGroup>
+
+  <!-- Ship README.md inside the NuGet package -->
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!--
+    MSBuild targets + template — shipped inside the NuGet package.
+    When a consumer references the package, the .props file runs on
+    their first build and auto-creates tollgate.json in their project
+    directory.
+  -->
+  <ItemGroup>
+    <None Include="build\**" Pack="true" PackagePath="build\" />
   </ItemGroup>
 
 </Project>

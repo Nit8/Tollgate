@@ -8,7 +8,7 @@ namespace Tollgate.Licensing
     public sealed class TollgateOptions
     {
         /// <summary>Base URL of the Tollgate license server.</summary>
-        public string ServerUrl { get; set; } = "http://localhost:5000";
+        public string ServerUrl { get; set; } = "http://localhost:7431";
 
         /// <summary>
         /// Your application ID (registered on the server). Multiple apps

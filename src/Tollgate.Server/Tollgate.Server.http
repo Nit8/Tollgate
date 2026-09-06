@@ -1,6 +1,35 @@
-@Tollgate.Server_HostAddress = http://localhost:5161
+@Tollgate.Server_HostAddress = http://localhost:7431
 
-GET {{Tollgate.Server_HostAddress}}/weatherforecast/
+### Health check
+GET {{Tollgate.Server_HostAddress}}/api/license/health
 Accept: application/json
 
-###
+### Validate a license key
+POST {{Tollgate.Server_HostAddress}}/api/license/validate
+Content-Type: application/json
+
+{
+  "licenseKey": "PRO-XXXX-XXXX-XXXX-XXXX",
+  "machineId": "test-machine-id",
+  "appId": "my-app"
+}
+
+### Generate license keys (requires admin key)
+POST {{Tollgate.Server_HostAddress}}/api/admin/generate
+Content-Type: application/json
+
+{
+  "appId": "my-app",
+  "tier": "Pro",
+  "count": 1,
+  "features": ["export-pdf", "ai-assist"],
+  "adminKey": "MY-SUPER-SECRET-ADMIN-KEY-CHANGE-ME"
+}
+
+### List all keys (admin key in header)
+GET {{Tollgate.Server_HostAddress}}/api/admin/keys
+X-Admin-Key: MY-SUPER-SECRET-ADMIN-KEY-CHANGE-ME
+
+### List registered apps
+GET {{Tollgate.Server_HostAddress}}/api/admin/apps
+X-Admin-Key: MY-SUPER-SECRET-ADMIN-KEY-CHANGE-ME

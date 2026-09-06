@@ -36,7 +36,7 @@ namespace Tollgate.Licensing
     public sealed class TollgateConfig
     {
         /// <summary>Server URL, e.g. https://license.myapp.com.</summary>
-        public string ServerUrl { get; set; } = "http://localhost:5000";
+        public string ServerUrl { get; set; } = "http://localhost:7431";
 
         /// <summary>App ID. Unique per product.</summary>
         public string AppId { get; set; } = "";
@@ -149,7 +149,7 @@ namespace Tollgate.Licensing
             // clean JSON.
             var template = new TollgateConfig
             {
-                ServerUrl = "http://localhost:5000",
+                ServerUrl = "http://localhost:7431",
                 AppId = "my-app",
                 AppVersion = "1.0.0",
                 AdminKey = "REPLACE_WITH_YOUR_ADMIN_KEY",

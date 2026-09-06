@@ -1,9 +1,37 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Tollgate.Abstractions</RootNamespace>
+
+    <!-- NuGet packaging metadata -->
+    <PackageId>Tollgate.Abstractions</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Tollgate</Authors>
+    <Company>Tollgate</Company>
+    <Product>Tollgate</Product>
+    <Description>
+      Drop-in SaaS licensing for any .NET app (WPF, WinForms, ASP.NET, Console).
+      Shared abstractions: attributes, enums, DTOs and exceptions used by both
+      the Tollgate client library and the Tollgate license server.
+    </Description>
+    <Summary>SaaS licensing abstractions — [RequireFeature], [RequireTier], DTOs.</Summary>
+    <PackageTags>licensing;saas;subscription;feature;toggle;tollgate;dotnet;nuget</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/your-org/tollgate</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/your-org/tollgate</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
 </Project>
