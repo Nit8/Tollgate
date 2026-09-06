@@ -115,7 +115,7 @@ namespace Tollgate.Server
                 {
                     o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
                     // Trust the local proxy by default — tighten for multi-tier setups.
-                    o.KnownNetworks.Clear();
+                    o.KnownIPNetworks.Clear();
                     o.KnownProxies.Clear();
                 });
             }

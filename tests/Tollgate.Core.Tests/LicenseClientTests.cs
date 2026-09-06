@@ -171,7 +171,7 @@ public class LicenseClientTests
         Assert.False(await offlineClient.TryLoadSavedLicenseAsync());
 
         // Unreachable ≠ rejected → cache survives for the next launch.
-        var store = new Tollgate.Licensing.LicenseStore(strict);
+        var store = new Tollgate.Licensing.LicenseCache.LicenseStore(strict);
         Assert.NotNull(store.Load());
     }
 
@@ -191,7 +191,7 @@ public class LicenseClientTests
         client.ClearLicense();
         Assert.False(client.Current.IsValid);
 
-        var store = new Tollgate.Licensing.LicenseStore(options);
+        var store = new Tollgate.Licensing.LicenseCache.LicenseStore(options);
         Assert.Null(store.Load());
     }
 }

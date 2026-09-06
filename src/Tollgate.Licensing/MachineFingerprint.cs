@@ -97,6 +97,7 @@ namespace Tollgate.Licensing
         /// Read HKLM\SOFTWARE\Microsoft\Cryptography\MachineGuid, checking
         /// both 64-bit and 32-bit views.
         /// </summary>
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         private static string? ReadMachineGuid()
         {
             const string subKey = @"SOFTWARE\Microsoft\Cryptography";

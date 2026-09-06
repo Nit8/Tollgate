@@ -69,8 +69,8 @@ public class AdminController : ControllerBase
     /// <summary>Generates 1–100 license keys for an app/tier.</summary>
     [HttpPost("generate")]
     public async Task<ActionResult<GenerateKeysResponse>> GenerateKeys(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey = null,
-        [FromBody] GenerateKeysRequest req)
+        [FromBody] GenerateKeysRequest req,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey = null)
     {
         if (!IsAdminAuthorized(adminKey)) return DenyAdmin();
         if (string.IsNullOrWhiteSpace(req.AppId))
@@ -131,8 +131,8 @@ public class AdminController : ControllerBase
     /// <summary>Replace the feature list on an existing key without revoking.</summary>
     [HttpPost("set-features")]
     public async Task<IActionResult> SetFeatures(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey = null,
-        [FromBody] SetFeaturesRequest req)
+        [FromBody] SetFeaturesRequest req,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey = null)
     {
         if (!IsAdminAuthorized(adminKey)) return DenyAdmin();
 
@@ -153,8 +153,8 @@ public class AdminController : ControllerBase
     /// <summary>Revoke a key (scoped by app when AppId is provided).</summary>
     [HttpPost("revoke")]
     public async Task<IActionResult> RevokeKey(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey = null,
-        [FromBody] RevokeKeyRequest req)
+        [FromBody] RevokeKeyRequest req,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey = null)
     {
         if (!IsAdminAuthorized(adminKey)) return DenyAdmin();
 
@@ -226,8 +226,8 @@ public class AdminController : ControllerBase
     /// <summary>Clear machine binding so the key can activate elsewhere.</summary>
     [HttpPost("reset-machine")]
     public async Task<IActionResult> ResetMachine(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey = null,
-        [FromBody] ResetMachineRequest req)
+        [FromBody] ResetMachineRequest req,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey = null)
     {
         if (!IsAdminAuthorized(adminKey)) return DenyAdmin();
 
@@ -248,8 +248,8 @@ public class AdminController : ControllerBase
     /// <summary>Register a new app (multi-tenant).</summary>
     [HttpPost("apps/register")]
     public async Task<IActionResult> RegisterApp(
-        [FromHeader(Name = "X-Admin-Key")] string? adminKey = null,
-        [FromBody] RegisterAppRequest req)
+        [FromBody] RegisterAppRequest req,
+        [FromHeader(Name = "X-Admin-Key")] string? adminKey = null)
     {
         if (!IsAdminAuthorized(adminKey)) return DenyAdmin();
         if (string.IsNullOrWhiteSpace(req.AppId))

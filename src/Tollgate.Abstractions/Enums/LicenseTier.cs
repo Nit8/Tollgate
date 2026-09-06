@@ -22,10 +22,19 @@ namespace Tollgate.Abstractions.Enums
     /// <summary>License tiers. Ordered: higher values include lower ones.</summary>
     public enum LicenseTier
     {
+        /// <summary>No license, trial, or free mode.</summary>
         None = 0,
+
+        /// <summary>Registered free tier (no paid features).</summary>
         Free = 1,
+
+        /// <summary>Paid starter tier.</summary>
         Basic = 2,
+
+        /// <summary>Paid pro tier; includes Basic.</summary>
         Pro = 3,
+
+        /// <summary>Paid enterprise tier; includes Pro.</summary>
         Enterprise = 4
     }
 }

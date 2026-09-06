@@ -116,8 +116,18 @@ namespace Tollgate.Licensing
         public static TollgateConfig? Load(string path)
         {
             if (!File.Exists(path)) return null;
-            var json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<TollgateConfig>(json, JsonOpts);
+            try
+            {
+                var json = File.ReadAllText(path);
+                return JsonSerializer.Deserialize<TollgateConfig>(json, JsonOpts);
+            }
+            catch (Exception ex) when (ex is JsonException or IOException)
+            {
+                // Malformed or unreadable config must never crash a consumer's
+                // app on startup — treat it as absent (callers fall back to
+                // the next search location / free mode).
+                return null;
+            }
         }
 
         /// <summary>

@@ -26,6 +26,7 @@ COPY Directory.Build.props Directory.Build.targets Directory.Packages.props ./
 COPY icon.png ./
 
 # Copy csproj files for layer caching.
+# All projects live under src/ (Licensing was moved there too).
 COPY src/Tollgate.Abstractions/Tollgate.Abstractions.csproj ./src/Tollgate.Abstractions/
 COPY src/Tollgate.Licensing/Tollgate.Licensing.csproj         ./src/Tollgate.Licensing/
 COPY src/Tollgate.AspNetCore/Tollgate.AspNetCore.csproj       ./src/Tollgate.AspNetCore/

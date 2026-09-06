@@ -49,13 +49,25 @@ namespace Tollgate.Abstractions
 
         // ── Convenience predicates ─────────────────────────────────
 
+        /// <summary>True when a valid license with any non-None tier is active.</summary>
         public bool IsLicensed => Tier != LicenseTier.None && IsValid;
+
+        /// <summary>True when a valid license is active but its tier is None (trial keys are issued as None-tier).</summary>
         public bool IsTrial => IsValid && Tier == LicenseTier.None;
+
+        /// <summary>True when the active license is exactly the Free tier.</summary>
         public bool IsFree => Tier == LicenseTier.Free;
+
+        /// <summary>True when the active license is exactly the Basic tier.</summary>
         public bool IsBasic => Tier == LicenseTier.Basic;
+
+        /// <summary>True when the active license is exactly the Pro tier.</summary>
         public bool IsPro => Tier == LicenseTier.Pro;
+
+        /// <summary>True when the active license is exactly the Enterprise tier.</summary>
         public bool IsEnterprise => Tier == LicenseTier.Enterprise;
 
+        /// <summary>A neutral, empty state — no license, no features.</summary>
         public static LicenseState Empty => new();
     }
 }

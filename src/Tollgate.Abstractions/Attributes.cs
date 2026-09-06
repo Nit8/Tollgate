@@ -51,6 +51,11 @@ namespace Tollgate.Abstractions
         /// <summary>Optional message shown to the user when access is denied.</summary>
         public string? DeniedMessage { get; set; }
 
+        /// <summary>
+        /// Marks the member as requiring the named feature.
+        /// </summary>
+        /// <param name="feature">Feature name assigned to the license key server-side (e.g. "export-pdf").</param>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="feature"/> is null or blank.</exception>
         public RequireFeatureAttribute(string feature)
         {
             if (string.IsNullOrWhiteSpace(feature))
@@ -85,6 +90,10 @@ namespace Tollgate.Abstractions
         /// <summary>Optional message shown to the user when access is denied.</summary>
         public string? DeniedMessage { get; set; }
 
+        /// <summary>
+        /// Marks the member as requiring at least the given tier.
+        /// </summary>
+        /// <param name="tier">Minimum tier required (higher tiers implicitly pass).</param>
         public RequireTierAttribute(LicenseTier tier)
         {
             Tier = tier;

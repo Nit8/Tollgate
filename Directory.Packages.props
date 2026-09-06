@@ -5,10 +5,13 @@
       Central Package Management — every NuGet version in the repo
       is declared exactly once, here.
 
-      The Microsoft.Extensions.* and Microsoft.Win32.Registry
-      versions are TFM-conditional: the net8.0 target of the client
-      packages uses the 8.x line so it restores cleanly on .NET 8,
-      while net10.0* uses the current 10.x line.
+      The Microsoft.Extensions.* versions are TFM-conditional: the
+      net8.0 target of the client packages uses the 8.x line so it
+      restores cleanly on .NET 8, while net10.0* uses the 10.x line.
+
+      Note: Microsoft.Win32.RegistryKey needs NO package reference —
+      it ships in the base shared framework of net8.0, net10.0 and
+      net10.0-windows (verified: compiles with zero package refs).
     ═══════════════════════════════════════════════════════════════
   -->
 
@@ -21,12 +24,11 @@
     <MEPackagesVersion Condition="'$(TargetFramework)' != 'net8.0'">10.0.0</MEPackagesVersion>
     <MEOptionsVersion Condition="'$(TargetFramework)' == 'net8.0'">8.0.2</MEOptionsVersion>
     <MEOptionsVersion Condition="'$(TargetFramework)' != 'net8.0'">10.0.11</MEOptionsVersion>
-    <MELoggingVersion Condition="'$(TargetFramework)' == 'net8.0'">8.0.1</MELoggingVersion>
+    <!-- Logging.Abstractions: 8.0.2 minimum — Microsoft.Extensions.Http 8.0.1
+         transitively requires >= 8.0.2; pinning 8.0.1 would trigger NU1605
+         (downgrade) for every .NET 8 consumer of the package. -->
+    <MELoggingVersion Condition="'$(TargetFramework)' == 'net8.0'">8.0.2</MELoggingVersion>
     <MELoggingVersion Condition="'$(TargetFramework)' != 'net8.0'">10.0.0</MELoggingVersion>
-
-    <!-- Registry — 8.x / 10.x by TFM (Windows-only runtime, safe to reference). -->
-    <RegistryVersion Condition="'$(TargetFramework)' == 'net8.0'">8.0.0</RegistryVersion>
-    <RegistryVersion Condition="'$(TargetFramework)' != 'net8.0'">10.0.0</RegistryVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,7 +37,6 @@
     <PackageVersion Include="Microsoft.Extensions.Options" Version="$(MEOptionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="$(MELoggingVersion)" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
-    <PackageVersion Include="Microsoft.Win32.Registry" Version="$(RegistryVersion)" />
 
     <!-- Tollgate.Licensing (net10.0-windows only) -->
     <PackageVersion Include="System.Management" Version="10.0.0" />

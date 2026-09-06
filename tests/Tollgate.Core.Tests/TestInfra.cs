@@ -104,7 +104,7 @@ public static class TestInfra
     }
 
     public static LicenseClient Client(HttpClient http, TollgateOptions options) =>
-        new(http, Options.Create(options));
+        new(http, Microsoft.Extensions.Options.Options.Create(options));
 }
 
 /// <summary>HttpMessageHandler that records calls and answers from a delegate.</summary>

@@ -364,7 +364,7 @@ namespace Tollgate.Licensing
                     else if (publicKey.Contains("<RSAKeyValue"))
                         rsa.FromXmlString(publicKey);
                     else
-                        rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(publicKey));
+                        rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(publicKey), out _);
 
                     return new RsaSecurityKey(rsa);
                 }

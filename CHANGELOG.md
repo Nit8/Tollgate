@@ -36,6 +36,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docker-compose.yml`, `systemd` unit and appsettings carry the new `Cors` / `Data` settings.
 
 ### Fixed
+- **Restore blocker (NU1102)**: `Microsoft.Win32.Registry` was referenced at nonexistent versions (8.0.0 / 10.0.0 — the package's published line ends at 5.0.0 stable), so restore failed outright. Removed entirely: `Microsoft.Win32.RegistryKey` ships in the base shared framework of net8.0, net10.0 and net10.0-windows, so no package reference is needed.
+- **Compile errors (masked by the restore failure)**: `RSA.ImportSubjectPublicKeyInfo` was called without the required `out int bytesRead` argument (CS7036, all TFMs); five admin action methods declared the optional `X-Admin-Key` parameter *before* required `[FromBody]` parameters (CS1737). Parameters were reordered — ASP.NET Core binds by name, so the HTTP contract is unchanged.
+- **.NET 8 consumers (NU1605)**: `Microsoft.Extensions.Logging.Abstractions` was pinned at 8.0.1 for the net8.0 target, but `Microsoft.Extensions.Http 8.0.1` requires at least 8.0.2 — every .NET 8 consumer hit a package-downgrade error. Bumped to 8.0.2.
+- `TollgateConfig.Load` now returns null on malformed or unreadable JSON instead of throwing — a corrupted `tollgate.json` can no longer crash a consumer's app at startup.
+- Test project: global `Xunit` using + implicit usings added, `LicenseStore` namespace corrected, `Options.Create` disambiguated from the `TestInfra.Options` helper — 51/51 tests pass.
+- `ForwardedHeadersOptions.KnownNetworks` (obsolete in .NET 10) replaced with `KnownIPNetworks`.
+- XML documentation completed for all 18 previously undocumented public Abstractions members (tier values, state predicates, attribute and exception constructors) — full IntelliSense for consumers; the solution now builds with zero warnings.
 - **Critical**: `LicenseClient` previously parsed cached JWTs with `ReadJwtToken` (no signature verification) — any local user could forge an Enterprise-tier cache entry. The client now verifies tokens with the same rigor as the server.
 - Build scripts / Dockerfile referenced `Tollgate.Licensing` at the repository root instead of `src/`.
 - Docker container listened on port 5000 while compose mapped and health-checked 7431.
