@@ -46,7 +46,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Tollgate.Abstractions\Tollgate.Abstractions.csproj" />
+    <ProjectReference Include="..\Tollgate.Abstractions\Tollgate.Abstractions.csproj" />
   </ItemGroup>
 
   <!-- Ship README.md inside the NuGet package -->
