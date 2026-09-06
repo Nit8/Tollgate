@@ -5,12 +5,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<RootNamespace>Tollgate.Samples.Console</RootNamespace>
-	<AssemblyName>tollgate-sample-console</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Tollgate.Licensing\Tollgate.Licensing.csproj" />
+    <ProjectReference Include="..\..\src\Tollgate.Abstractions\Tollgate.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Tollgate.Licensing\Tollgate.Licensing.csproj" />
   </ItemGroup>
 
 </Project>
