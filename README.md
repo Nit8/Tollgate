@@ -7,7 +7,7 @@ Tollgate is a complete, open-source licensing toolkit that turns any .NET applic
 
 ---
 
-## ✨ Features
+## Features
 
 | Capability                              | Tollgate |
 |-----------------------------------------|----------|
@@ -34,7 +34,7 @@ Tollgate is a complete, open-source licensing toolkit that turns any .NET applic
 
 ---
 
-## 📦 NuGet packages
+## NuGet packages
 
 | Package | What it's for | Install |
 |---------|---------------|---------|
@@ -47,7 +47,7 @@ The `Tollgate.Server` project is **not a NuGet package** — it is a deployable 
 
 ---
 
-## 🏗 Project structure
+## Project structure
 
 ```
 Tollgate/
@@ -108,7 +108,7 @@ Tollgate/
 
 ---
 
-## 🚀 Quick start (5 minutes, end-to-end)
+## Quick start (5 minutes, end-to-end)
 
 ### Step 1 — Run the Tollgate server
 
@@ -231,7 +231,7 @@ builder.Services.AddControllersWithViews(o =>
 
 ---
 
-## 🧱 Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -279,7 +279,7 @@ Any .NET licensing library can be defeated by a determined attacker with a decom
 
 ---
 
-## 🎯 Developer API
+## Developer API
 
 ### Attributes
 
@@ -348,7 +348,7 @@ catch (LicenseRequiredException ex)
 
 ---
 
-## 📁 Configuration via `tollgate.json` (recommended)
+## Configuration via `tollgate.json` (recommended)
 
 Drop a `tollgate.json` file in your project. Tollgate auto-discovers it on startup so your code stays config-free.
 
@@ -434,7 +434,7 @@ $ dotnet run --project src/Tollgate.KeyGen -- init
 
 ---
 
-## 🖥 Server API reference
+## Server API reference
 
 ### Public (no admin key required)
 
@@ -473,7 +473,7 @@ All admin operations are rate-limited (60 req/min/IP) and written to a persisten
 
 ---
 
-## 🔧 Configuration reference
+## Configuration reference
 
 ### Client (`TollgateOptions`)
 
@@ -508,7 +508,7 @@ All admin operations are rate-limited (60 req/min/IP) and written to a persisten
 
 ---
 
-## 🔐 Security checklist for production
+## Security checklist for production
 
 - [x] **Client verifies JWT signatures** — offline cache is cryptographically verified (fail-closed without a key)
 - [x] **Rate limiting applied** to all endpoints (60/min/IP, 429 responses)
@@ -526,7 +526,7 @@ All admin operations are rate-limited (60 req/min/IP) and written to a persisten
 
 ---
 
-## 🛠 Build, test & publish
+## Build, test & publish
 
 ### Build everything + run tests + pack NuGet packages
 
@@ -566,6 +566,6 @@ Validation takes 15–60 minutes. **Versions are immutable** — a broken upload
 
 ---
 
-## 📄 License
+## License
 
 MIT — see [LICENSE.txt](LICENSE.txt).
